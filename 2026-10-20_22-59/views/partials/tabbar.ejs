@@ -1,0 +1,26 @@
+<%# Phone navigation (D21): a fixed bottom tab bar, shown only under 900 px. Pure HTML and CSS; "بیشتر" is a
+    <details> menu with the remaining pages and sign-out. Locals from res.locals: active, user. %>
+<nav class="tabbar" aria-label="منوی اصلی موبایل">
+  <a href="/"<%- active === 'dashboard' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-home"/></svg><span>خانه</span></a>
+  <a href="/patients"<%- active === 'patients' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-users"/></svg><span>بیماران</span></a>
+  <a class="tabbar-new" href="/patients/new" aria-label="ثبت بیمار جدید"><span class="tabbar-plus"><svg class="icon"><use href="#i-plus"/></svg></span><span>جدید</span></a>
+  <a href="/visits"<%- active === 'visits' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-calendar"/></svg><span>ویزیت‌ها</span></a>
+  <a href="/search"<%- active === 'search' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-search"/></svg><span>جستجو</span></a>
+  <details class="tabbar-more">
+    <summary<%- ['data', 'users', 'audit', 'account', 'contact'].includes(active) ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-more"/></svg><span>بیشتر</span></summary>
+    <div class="tabbar-menu">
+      <div class="tabbar-user">
+        <span class="avatar avatar-sm"><%= Array.from(user.displayName)[0] %></span>
+        <div><b><%= user.displayName %></b><span><%= user.role === 'admin' ? 'مدیر' : 'کارمند' %></span></div>
+      </div>
+      <% if (user.role === 'admin') { %>
+      <a href="/data"><svg class="icon"><use href="#i-swap"/></svg>ورود و خروج داده</a>
+      <a href="/admin/users"><svg class="icon"><use href="#i-users"/></svg>مدیریت کاربران</a>
+      <a href="/admin/audit"><svg class="icon"><use href="#i-shield"/></svg>گزارش فعالیت</a>
+      <% } %>
+      <a href="/contact"><svg class="icon"><use href="#i-help"/></svg>تماس با ما</a>
+      <a href="/account"><svg class="icon"><use href="#i-shield"/></svg>حساب کاربری</a>
+      <form method="post" action="/logout"><button class="btn btn-block" type="submit">خروج از حساب</button></form>
+    </div>
+  </details>
+</nav>

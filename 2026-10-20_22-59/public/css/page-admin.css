@@ -1,0 +1,9 @@
+/* Admin pages: users, audit log, account. Small helpers on top of the shared components. */
+.mt-6 { margin-top: var(--sp-6); }
+.text-xs-subtle { font-size: var(--fs-xs); color: var(--text-3); }
+.text-sm { font-size: var(--fs-sm); }
+.mono { direction: ltr; unicode-bidi: isolate; }
+.link-secondary { font-size: var(--fs-sm); color: var(--accent-text); }
+/* deactivate and delete side by side in a user row */
+.user-actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.page-head + .callout, .page-head + .info-box, .callout + .info-box { margin-bottom: var(--sp-5); }

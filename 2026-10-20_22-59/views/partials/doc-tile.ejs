@@ -1,0 +1,45 @@
+<%# One document in a gallery (D21). Locals: d (from documentsFor()), code, back ('documents' or ''), classify (bool).
+    JPG and PNG show a large preview; PDF and DICOM show a same-size tile with the file type. %>
+<%
+const tileExt = (d.filename.split('.').pop() || '').toLowerCase();
+const tileType = tileExt === 'jpeg' ? 'jpg' : tileExt;
+const isImage = tileType === 'jpg' || tileType === 'png';
+const canOpen = isImage || tileType === 'pdf';
+const fileUrl = '/patients/' + code + '/files/' + encodeURIComponent(d.filename);
+const tileTitle = d.row && d.row.title ? d.row.title : d.filename;
+const tileDay = d.row && d.row.doc_date ? d.row.doc_date : localDay(d.modified);
+const tileSize = d.size < 1048576 ? faDigits(Math.max(1, Math.round(d.size / 1024))) + ' کیلوبایت' : faDigits((d.size / 1048576).toFixed(1)).replace('.', '٫') + ' مگابایت';
+const typeLabel = { pdf: 'PDF', dcm: 'DICOM', jpg: 'JPG', png: 'PNG' }[tileType] || tileExt.toUpperCase();
+%>
+<article class="doc-tile">
+  <a class="doc-media<%= isImage ? '' : ' doc-media-file' %>" href="<%= fileUrl %><%= canOpen ? '?inline=1' : '' %>"<%- canOpen ? ' target="_blank" rel="noopener"' : '' %>>
+    <% if (isImage) { %>
+    <img src="<%= fileUrl %>?inline=1" alt="<%= tileTitle %>" loading="lazy" decoding="async">
+    <% } else { %>
+    <span class="doc-type"><svg class="icon" aria-hidden="true"><use href="#i-file"/></svg><b><%= typeLabel %></b></span>
+    <% } %>
+    <span class="sr-only"><%= canOpen ? 'باز کردن' : 'دانلود' %> <%= tileTitle %></span>
+  </a>
+  <div class="doc-body">
+    <div class="doc-head">
+      <h3 class="doc-name"><%= tileTitle %></h3>
+      <span class="chip chip-plain <%= d.row ? 'chip-mute' : 'chip-warn' %>"><%= d.row ? labels.CATEGORY[d.row.category] : 'طبقه‌بندی نشده' %></span>
+    </div>
+    <p class="doc-sub"><%= formatJalali(tileDay, 'short') %> · <%= tileSize %><% if (d.row && d.row.title) { %> · <span class="doc-file"><%= d.filename %></span><% } %></p>
+    <div class="doc-actions">
+      <% if (canOpen) { %><a class="btn btn-sm" href="<%= fileUrl %>?inline=1" target="_blank" rel="noopener"><svg class="icon"><use href="#i-eye"/></svg>مشاهده</a><% } %>
+      <a class="btn btn-sm btn-ghost" href="<%= fileUrl %>"><svg class="icon"><use href="#i-download"/></svg>دانلود</a>
+      <%- include('confirm-delete', { action: fileUrl + '/delete', back, question: 'این فایل از پرونده حذف شود؟' }) %>
+    </div>
+    <% if (classify && !d.row) { %>
+    <form class="doc-classify" method="post" action="/patients/<%= code %>/documents/classify">
+      <input type="hidden" name="filename" value="<%= d.filename %>">
+      <label class="sr-only" for="cl-<%= encodeURIComponent(d.filename) %>">طبقه‌بندی</label>
+      <select class="select" id="cl-<%= encodeURIComponent(d.filename) %>" name="category">
+        <% Object.entries(labels.CATEGORY).forEach(([k, l]) => { %><option value="<%= k %>"<%- k === 'other' ? ' selected' : '' %>><%= l %></option><% }) %>
+      </select>
+      <button class="btn btn-sm" type="submit">ثبت طبقه‌بندی</button>
+    </form>
+    <% } %>
+  </div>
+</article>

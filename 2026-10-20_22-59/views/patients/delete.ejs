@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'حذف بیمار' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <section class="card">
+        <form class="card-body form-section" method="post" action="/patients/<%= patient.code %>/delete">
+          <h1>حذف پرونده‌ی بیمار</h1>
+          <p>پرونده‌ی <b><%= patient.first_name %> <%= patient.last_name %></b> (<span class="mono"><%= patient.code %></span>) از سامانه حذف می‌شود.</p>
+          <p class="muted">اطلاعات ثبت‌شده و داروها پاک می‌شوند. پوشه‌ی فایل‌های بیمار پاک نمی‌شود و به پوشه‌ی <span class="mono">data/trash</span> روی سرور منتقل می‌شود. اگر فقط می‌خواهید پرونده از فهرست کنار برود، به‌جای حذف آن را بایگانی کنید.</p>
+          <div class="form-actions">
+            <button class="btn btn-danger" type="submit"><svg class="icon"><use href="#i-trash"/></svg>حذف پرونده</button>
+            <a class="btn" href="/patients/<%= patient.code %>">انصراف</a>
+          </div>
+        </form>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

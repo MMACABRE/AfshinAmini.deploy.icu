@@ -1,0 +1,29 @@
+<%# Sidebar. Locals from res.locals: active (nav key), user, patientCount. %>
+<aside class="sidebar">
+  <a class="brand" href="/">
+    <span class="brand-mark"><svg class="icon"><use href="#i-cross"/></svg></span>
+    <span>سامانه‌ی پرونده‌ی بیماران<small>پرتال کارکنان</small></span>
+  </a>
+  <nav class="nav" aria-label="منوی اصلی">
+    <div class="nav-label">فضای کار</div>
+    <a href="/"<%- active === 'dashboard' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-home"/></svg><span>داشبورد</span></a>
+    <a href="/patients"<%- active === 'patients' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-users"/></svg><span>بیماران</span><span class="count"><%= faDigits(patientCount.toLocaleString('en-US').replace(/,/g, '٬')) %></span></a>
+    <a href="/visits"<%- active === 'visits' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-calendar"/></svg><span>ویزیت‌ها</span></a>
+    <div class="nav-label">داده</div>
+    <a href="/search"<%- active === 'search' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-search"/></svg><span>جستجوی پیشرفته</span></a>
+    <% if (user.role === 'admin') { %>
+    <a href="/data"<%- active === 'data' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-swap"/></svg><span>ورود و خروج داده</span></a>
+    <a href="/admin/users"<%- active === 'users' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-users"/></svg><span>مدیریت کاربران</span></a>
+    <a href="/admin/audit"<%- active === 'audit' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-shield"/></svg><span>گزارش فعالیت</span></a>
+    <% } %>
+    <div class="nav-label">پشتیبانی</div>
+    <a href="/contact"<%- active === 'contact' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-help"/></svg><span>تماس با ما</span></a>
+  </nav>
+  <div class="sidebar-foot">
+    <a class="user-chip" href="/account" title="حساب کاربری"<%- active === 'account' ? ' aria-current="page"' : '' %>>
+      <span class="avatar"><%= Array.from(user.displayName)[0] %></span>
+      <div><b><%= user.displayName %></b><span><%= user.role === 'admin' ? 'مدیر' : 'کارمند' %></span></div>
+    </a>
+    <form method="post" action="/logout"><button class="btn btn-sm btn-block" type="submit">خروج</button></form>
+  </div>
+</aside>

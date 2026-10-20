@@ -1,0 +1,138 @@
+<%
+const { STATUS } = labels;
+const total = Object.values(counts).reduce((a, b) => a + b, 0);
+const fa = (n) => faDigits(Number(n).toLocaleString('en-US').replace(/,/g, '٬'));
+const initials = (p) => Array.from(p.first_name)[0] + Array.from(p.last_name)[0];
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('partials/head', { title: 'داشبورد', pageCss: 'page-dashboard' }) %>
+</head>
+<body>
+<%- include('partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">DashBoard</span></div>
+          <h1>داشبورد</h1>
+          <p>خلاصه‌ی وضعیت پرونده‌ها و کارهایی که نیاز به پیگیری دارند.</p>
+        </div>
+        <%- include('partials/clock-card', { clock }) %>
+      </div>
+
+      <section class="quick" aria-labelledby="qa-h">
+        <h2 id="qa-h">دسترسی سریع</h2>
+        <div class="qa-grid<%= user.role === 'admin' ? ' qa-admin' : '' %>">
+          <a class="qa-tile qa-primary" href="/patients/new">
+            <span class="qa-icon"><svg class="icon"><use href="#i-plus"/></svg></span>
+            <span class="qa-text"><b>ثبت بیمار جدید</b><span>پرونده‌ی تازه با کد خودکار بسازید</span></span>
+          </a>
+          <a class="qa-tile" href="/patients">
+            <span class="qa-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <span class="qa-text"><b>فهرست بیماران</b><span><%= fa(total - (counts.archived || 0)) %> پرونده</span></span>
+          </a>
+          <a class="qa-tile" href="/search">
+            <span class="qa-icon"><svg class="icon"><use href="#i-search"/></svg></span>
+            <span class="qa-text"><b>جستجوی پیشرفته</b><span>جستجو با چند شرط و خروجی اکسل</span></span>
+          </a>
+          <a class="qa-tile" href="/patients">
+            <span class="qa-icon"><svg class="icon"><use href="#i-upload"/></svg></span>
+            <span class="qa-text"><b>بارگذاری مدرک</b><span>بیمار را انتخاب کنید و فایل را رها کنید</span></span>
+          </a>
+          <% if (user.role === 'admin') { %>
+          <a class="qa-tile" href="/data">
+            <span class="qa-icon"><svg class="icon"><use href="#i-swap"/></svg></span>
+            <span class="qa-text"><b>ورود و خروج داده</b><span>ورود از CSV و دریافت فایل کامل</span></span>
+          </a>
+          <a class="qa-tile" href="/admin/users">
+            <span class="qa-icon"><svg class="icon"><use href="#i-users"/></svg></span>
+            <span class="qa-text"><b>مدیریت کاربران</b><span>ساخت حساب و تنظیم رمز کارکنان</span></span>
+          </a>
+          <a class="qa-tile" href="/admin/audit">
+            <span class="qa-icon"><svg class="icon"><use href="#i-shield"/></svg></span>
+            <span class="qa-text"><b>گزارش فعالیت</b><span>چه کسی، چه زمانی، چه کاری کرد</span></span>
+          </a>
+          <% } else { %>
+          <a class="qa-tile" href="/account">
+            <span class="qa-icon"><svg class="icon"><use href="#i-shield"/></svg></span>
+            <span class="qa-text"><b>حساب کاربری</b><span>تغییر رمز عبور</span></span>
+          </a>
+          <% } %>
+        </div>
+      </section>
+
+      <section class="grid grid-3" aria-label="خلاصه">
+        <article class="card stat">
+          <div class="stat-label">بیماران فعال <span class="stat-icon"><svg class="icon"><use href="#i-users"/></svg></span></div>
+          <div class="stat-value"><%= fa(counts.active || 0) %></div>
+          <div class="stat-delta">از <%= fa(total) %> پرونده</div>
+        </article>
+        <article class="card stat">
+          <div class="stat-label">در انتظار <span class="stat-icon"><svg class="icon"><use href="#i-file"/></svg></span></div>
+          <div class="stat-value"><%= fa(counts.pending || 0) %></div>
+          <div class="stat-delta">پرونده‌ی ناقص یا نیازمند بررسی</div>
+        </article>
+        <article class="card stat">
+          <div class="stat-label">بحرانی <span class="stat-icon"><svg class="icon"><use href="#i-pulse"/></svg></span></div>
+          <div class="stat-value"><%= fa(counts.critical || 0) %></div>
+          <div class="stat-delta">نیازمند توجه فوری</div>
+        </article>
+      </section>
+
+      <section class="card today-visits" aria-labelledby="tv-h">
+        <div class="card-head">
+          <div><h2 id="tv-h">ویزیت‌های امروز</h2><p><%= formatJalali(localDay()) %> · <%= fa(visitsToday.length) %> ویزیت</p></div>
+          <div class="today-links">
+            <a class="chip chip-filter" href="/visits?range=tomorrow">فردا</a>
+            <a class="chip chip-filter" href="/visits?range=week">۷ روز آینده</a>
+            <a class="chip chip-filter" href="/visits?range=month">این ماه</a>
+            <a class="btn btn-sm" href="/visits">همه‌ی ویزیت‌ها</a>
+          </div>
+        </div>
+        <% if (visitsToday.length === 0) { %>
+          <div class="card-body"><p class="muted">امروز ویزیتی ثبت نشده است.</p></div>
+        <% } else { %>
+        <ul class="visit-list visit-compact rail">
+          <% const upNext = visitsToday.find((x) => x.status === 'scheduled' && !x.overdue && !x.ongoing); %>
+          <% visitsToday.slice(0, 30).forEach((v) => { %>
+          <li class="visit visit-<%= v.status %><%= v.overdue ? ' visit-overdue' : '' %><%= v === upNext || v.ongoing ? ' visit-now' : '' %>">
+            <div class="visit-when"><b class="mono"><%= faDigits(v.visit_time) %></b><span>تا <span class="mono"><%= faDigits(endTime(v.visit_time, v.duration_min)) %></span></span></div>
+            <div class="visit-body"><a class="visit-patient" href="/patients/<%= v.code %>"><%= v.first_name %> <%= v.last_name %></a><span class="visit-reason"><%= v.reason || 'بدون شرح' %></span></div>
+            <% if (v.status === 'done') { %><span class="chip chip-ok">انجام‌شده</span><% } else if (v.ongoing) { %><span class="chip chip-ok">در جریان</span><% } else if (v.overdue) { %><span class="chip chip-warn">زمان گذشته</span><% } else { %><span class="chip chip-info"><%= v === upNext ? 'نوبت بعدی' : 'در انتظار' %></span><% } %>
+          </li>
+          <% }) %>
+        </ul>
+        <% if (visitsToday.length > 30) { %><div class="card-foot"><span>و <%= fa(visitsToday.length - 30) %> ویزیت دیگر</span><a class="btn btn-sm" href="/visits">همه‌ی ویزیت‌های امروز</a></div><% } %>
+        <% } %>
+      </section>
+
+      <section class="card" aria-labelledby="rp-h">
+        <div class="card-head">
+          <div><h2 id="rp-h">آخرین پرونده‌های به‌روزشده</h2><p>۸ پرونده‌ی اخیر</p></div>
+          <a class="btn btn-sm" href="/patients">فهرست بیماران</a>
+        </div>
+        <% if (recent.length === 0) { %>
+          <div class="card-body"><p class="muted">هنوز بیماری ثبت نشده است.</p></div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">بیمار</th><th scope="col">کد</th><th scope="col">آخرین تغییر</th><th scope="col">وضعیت</th></tr></thead>
+            <tbody>
+              <% recent.forEach((p) => { %>
+              <tr>
+                <td data-label="بیمار"><div class="person"><span class="avatar avatar-sm"><%= initials(p) %></span><b><a href="/patients/<%= p.code %>"><%= p.first_name %> <%= p.last_name %></a></b></div></td>
+                <td data-label="کد" class="mono"><%= p.code %></td>
+                <td data-label="آخرین تغییر"><%= formatJalali(localDay(p.updated_at)) %></td>
+                <td data-label="وضعیت"><span class="chip <%= STATUS[p.status].chip %>"><%= STATUS[p.status].label %></span></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </section>
+
+<%- include('partials/shell-bottom') %>
+</body>
+</html>

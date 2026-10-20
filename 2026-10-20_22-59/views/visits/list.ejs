@@ -1,0 +1,96 @@
+<%
+const fa = (n) => faDigits(Number(n).toLocaleString('en-US').replace(/,/g, '٬'));
+// Link to this page with some parts changed: over.range, over.page; the status filter is kept.
+const href = (over = {}) => {
+  const q = new URLSearchParams();
+  if (over.range !== undefined) { if (over.range && over.range !== 'today') q.set('range', over.range); }
+  else if (dayInput) q.set('d', dayInput);
+  else if (rangeName && rangeName !== 'today') q.set('range', rangeName);
+  if (status) q.set('status', status);
+  if (over.page > 1) q.set('page', over.page);
+  const s = q.toString();
+  return '/visits' + (s ? '?' + s : '');
+};
+// Group rows by day (they arrive sorted).
+const days = [];
+rows.forEach((v) => {
+  const last = days[days.length - 1];
+  if (last && last.date === v.visit_date) last.items.push(v); else days.push({ date: v.visit_date, items: [v] });
+});
+const back = href({ page });
+const title = dayInput ? faDigits(dayInput) : (ranges[rangeName] || '');
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ویزیت‌ها', pageCss: 'page-visits' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Visits</span></div>
+          <h1>ویزیت‌ها</h1>
+          <p><%= fa(total) %> ویزیت · <%= title %></p>
+        </div>
+        <div class="page-actions">
+          <a class="btn btn-primary" href="/visits/new"><svg class="icon"><use href="#i-plus"/></svg>ویزیت جدید</a>
+        </div>
+      </div>
+
+      <section class="card">
+        <div class="toolbar visit-toolbar">
+          <div class="visit-ranges" role="group" aria-label="بازه‌ی زمانی">
+            <% Object.entries(ranges).forEach(([key, label]) => { %>
+            <a class="chip chip-filter<%= rangeName === key ? ' is-on' : '' %>" href="<%= href({ range: key }) %>"<%- rangeName === key ? ' aria-current="true"' : '' %>><%= label %></a>
+            <% }) %>
+          </div>
+          <form class="visit-filters" method="get" action="/visits">
+            <div class="field-inline">
+              <label for="vd">روز مشخص</label>
+              <input id="vd" class="input" type="text" name="d" value="<%= dayInput %>" placeholder="۱۴۰۳/۰۵/۱۲" inputmode="numeric" dir="ltr" data-jalali>
+            </div>
+            <select class="select" name="status" aria-label="وضعیت">
+              <option value="">همه‌ی وضعیت‌ها</option>
+              <% [['scheduled', 'برنامه‌ریزی‌شده'], ['done', 'انجام‌شده'], ['cancelled', 'لغو‌شده']].forEach(([k, l]) => { %>
+              <option value="<%= k %>"<%- status === k ? ' selected' : '' %>><%= l %></option>
+              <% }) %>
+            </select>
+            <% if (!dayInput && rangeName) { %><input type="hidden" name="range" value="<%= rangeName %>"><% } %>
+            <button class="btn btn-primary" type="submit">اعمال</button>
+          </form>
+        </div>
+
+        <% if (rows.length === 0) { %>
+        <div class="card-body"><p class="muted">ویزیتی در این بازه ثبت نشده است.</p></div>
+        <% } else { %>
+        <% days.forEach((day) => { %>
+        <section class="visit-day" aria-label="<%= formatJalali(day.date) %>">
+          <% const dp = dayParts(day.date); %>
+          <h2 class="day-head<%= day.date === today ? ' is-today' : '' %>">
+            <span class="day-num"><%= dp.day %></span>
+            <span class="day-meta"><small><%= dp.weekday %></small><b><%= dp.month %> <%= dp.year %></b></span>
+            <% if (day.date === today) { %><span class="chip chip-ok chip-plain">امروز</span><% } %>
+            <span class="day-count"><%= faDigits(day.items.length) %> ویزیت</span>
+          </h2>
+          <ul class="visit-list rail">
+            <% day.items.forEach((v) => { %><%- include('../partials/visit-item', { v, showPatient: true, back }) %><% }) %>
+          </ul>
+        </section>
+        <% }) %>
+        <% if (pages > 1) { %>
+        <div class="card-foot">
+          <span>صفحه‌ی <%= fa(page) %> از <%= fa(pages) %></span>
+          <div class="pagination">
+            <a class="page-btn" href="<%= href({ page: Math.max(1, page - 1) }) %>" aria-label="صفحه‌ی قبلی"<%- page === 1 ? ' aria-disabled="true"' : '' %>>&rsaquo;</a>
+            <a class="page-btn" href="<%= href({ page: Math.min(pages, page + 1) }) %>" aria-label="صفحه‌ی بعدی"<%- page === pages ? ' aria-disabled="true"' : '' %>>&lsaquo;</a>
+          </div>
+        </div>
+        <% } %>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<%# Opens the app shell: sprite, sidebar, topbar and <main class="content">. Close it with shell-bottom. %>
+<%- include('sprite') %>
+<div class="app">
+  <%- include('sidebar') %>
+  <%- include('tabbar') %>
+  <div class="main">
+    <header class="topbar">
+      <a class="topbar-brand" href="/" aria-label="داشبورد"><span class="brand-mark"><svg class="icon"><use href="#i-cross"/></svg></span></a>
+      <form class="input-group search" method="get" action="/patients">
+        <svg class="icon"><use href="#i-search"/></svg>
+        <input class="input" type="search" name="q" placeholder="جستجوی بیمار، کد یا شماره تلفن" aria-label="جستجو">
+      </form>
+      <div class="topbar-actions">
+        <%- include('theme-toggle') %>
+        <a class="btn btn-primary topbar-new" href="/patients/new"><svg class="icon"><use href="#i-plus"/></svg>بیمار جدید</a>
+      </div>
+    </header>
+    <main class="content">

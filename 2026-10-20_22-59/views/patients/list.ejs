@@ -1,0 +1,111 @@
+<%
+const { STATUS, SEX } = labels;
+const fa = (n) => faDigits(Number(n).toLocaleString('en-US').replace(/,/g, '٬'));
+const initials = (p) => Array.from(p.first_name)[0] + Array.from(p.last_name)[0];
+const href = (page) => {
+  const q = new URLSearchParams();
+  if (filters.text) q.set('q', filters.text);
+  if (filters.status) q.set('status', filters.status);
+  if (filters.sex) q.set('sex', filters.sex);
+  if (filters.sort !== 'updated') q.set('sort', filters.sort);
+  if (page > 1) q.set('page', page);
+  const s = q.toString();
+  return '/patients' + (s ? '?' + s : '');
+};
+const pageList = [];
+for (let n = 1; n <= pages; n++) {
+  if (n === 1 || n === pages || Math.abs(n - page) <= 1) pageList.push(n);
+  else if (pageList[pageList.length - 1] !== '…') pageList.push('…');
+}
+const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+const to = Math.min(total, page * pageSize);
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'بیماران', pageCss: 'page-patients' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Patients</span></div>
+          <h1>فهرست بیماران</h1>
+          <p><%= fa(total) %> بیمار پیدا شد</p>
+        </div>
+        <div class="page-actions">
+          <a class="btn btn-primary" href="/patients/new"><svg class="icon"><use href="#i-plus"/></svg>بیمار جدید</a>
+        </div>
+      </div>
+
+      <section class="card">
+        <form method="get" action="/patients">
+          <%# Keeps the chosen status when the search is submitted with Enter; a clicked status chip comes later in the query and wins. %>
+          <input type="hidden" name="status" value="<%= filters.status %>">
+          <div class="toolbar">
+            <div class="input-group flex-1-240-420">
+              <svg class="icon"><use href="#i-search"/></svg>
+              <input class="input" type="search" name="q" value="<%= filters.text %>" placeholder="نام، کد یا شماره تلفن" aria-label="جستجوی بیماران">
+            </div>
+            <select class="select" name="sex" aria-label="فیلتر بر اساس جنسیت">
+              <option value="">همه‌ی جنسیت‌ها</option>
+              <option value="male"<%- filters.sex === 'male' ? ' selected' : '' %>>مرد</option>
+              <option value="female"<%- filters.sex === 'female' ? ' selected' : '' %>>زن</option>
+            </select>
+            <select class="select" name="sort" aria-label="مرتب‌سازی">
+              <% [['updated', 'آخرین به‌روزرسانی'], ['name', 'نام خانوادگی (الف تا ی)'], ['birth_desc', 'تاریخ تولد (جدیدترین)'], ['birth_asc', 'تاریخ تولد (قدیمی‌ترین)'], ['code', 'کد بیمار']].forEach(([v, l]) => { %>
+              <option value="<%= v %>"<%- filters.sort === v ? ' selected' : '' %>><%= l %></option>
+              <% }) %>
+            </select>
+            <button class="btn btn-primary" type="submit">اعمال</button>
+            <a href="/search" class="link-secondary">جستجوی پیشرفته</a>
+          </div>
+
+          <div class="toolbar-gap">
+            <button class="chip chip-filter<%= filters.status === '' ? ' is-on' : '' %>" type="submit" name="status" value="" aria-pressed="<%= filters.status === '' %>">همه</button>
+            <% Object.entries(STATUS).forEach(([key, s]) => { %>
+            <button class="chip chip-filter<%= filters.status === key ? ' is-on' : '' %>" type="submit" name="status" value="<%= key %>" aria-pressed="<%= filters.status === key %>"><%= s.label %></button>
+            <% }) %>
+          </div>
+        </form>
+
+        <% if (rows.length === 0) { %>
+        <div class="card-body"><p class="muted">بیماری با این مشخصات پیدا نشد.</p></div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">بیمار</th><th scope="col">کد بیمار</th><th scope="col">سن</th><th scope="col">وضعیت</th><th scope="col">آخرین به‌روزرسانی</th></tr></thead>
+            <tbody>
+              <% rows.forEach((p) => { %>
+              <tr>
+                <td data-label="بیمار"><div class="person"><span class="avatar avatar-sm"><%= initials(p) %></span><div><a href="/patients/<%= p.code %>"><b><%= p.first_name %> <%= p.last_name %></b></a><span><%= SEX[p.sex] || '' %></span></div></div></td>
+                <td data-label="کد بیمار" class="mono"><%= p.code %></td>
+                <td data-label="سن"><%= p.age === null ? '—' : faDigits(p.age) %></td>
+                <td data-label="وضعیت"><span class="chip <%= STATUS[p.status].chip %>"><%= STATUS[p.status].label %></span></td>
+                <td data-label="آخرین به‌روزرسانی"><%= formatJalali(localDay(p.updated_at), 'short') %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="card-foot">
+          <span>نمایش <%= fa(from) %> تا <%= fa(to) %> از <%= fa(total) %> بیمار</span>
+          <% if (pages > 1) { %>
+          <div class="pagination">
+            <a class="page-btn" href="<%= href(Math.max(1, page - 1)) %>" aria-label="صفحه‌ی قبلی"<%- page === 1 ? ' aria-disabled="true"' : '' %>>&rsaquo;</a>
+            <% pageList.forEach((n) => { %>
+              <% if (n === '…') { %><span class="ellipsis">…</span>
+              <% } else { %><a class="page-btn" href="<%= href(n) %>"<%- n === page ? ' aria-current="page"' : '' %>><%= faDigits(n) %></a><% } %>
+            <% }) %>
+            <a class="page-btn" href="<%= href(Math.min(pages, page + 1)) %>" aria-label="صفحه‌ی بعدی"<%- page === pages ? ' aria-disabled="true"' : '' %>>&lsaquo;</a>
+          </div>
+          <% } %>
+        </div>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

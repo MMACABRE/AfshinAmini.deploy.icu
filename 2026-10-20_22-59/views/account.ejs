@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('partials/head', { title: 'حساب کاربری', pageCss: 'page-admin' }) %>
+</head>
+<body>
+<%- include('partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Account</span></div>
+          <h1>حساب کاربری</h1>
+          <p><%= user.displayName %> · <span class="mono"><%= user.username %></span> · <%= user.role === 'admin' ? 'مدیر' : 'کارمند' %></p>
+        </div>
+      </div>
+
+      <section class="card" aria-labelledby="pw-h">
+        <div class="card-head"><h2 id="pw-h">تغییر رمز عبور</h2></div>
+        <form class="card-body stack-lg" method="post" action="/account/password" autocomplete="off">
+          <% if (done) { %><div class="callout callout-info" role="status"><svg class="icon"><use href="#i-check"/></svg><span>رمز عبور عوض شد. در دستگاه‌های دیگر باید دوباره وارد شوید.</span></div><% } %>
+          <% if (error) { %><div class="info-box" role="alert"><%= error %></div><% } %>
+          <div class="form-grid">
+            <div class="field span-2">
+              <label for="cur">رمز فعلی</label>
+              <input id="cur" class="input" type="password" name="current" dir="ltr" maxlength="256" required autocomplete="current-password">
+            </div>
+            <div class="field">
+              <label for="new">رمز جدید</label>
+              <input id="new" class="input" type="password" name="password" dir="ltr" minlength="10" maxlength="256" required autocomplete="new-password">
+              <span class="hint">دست‌کم ۱۰ نویسه</span>
+            </div>
+            <div class="field">
+              <label for="rep">تکرار رمز جدید</label>
+              <input id="rep" class="input" type="password" name="repeat" dir="ltr" minlength="10" maxlength="256" required autocomplete="new-password">
+            </div>
+          </div>
+          <div><button class="btn btn-primary" type="submit">ذخیره‌ی رمز جدید</button></div>
+        </form>
+      </section>
+
+<%- include('partials/shell-bottom') %>
+</body>
+</html>
