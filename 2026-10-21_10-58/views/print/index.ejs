@@ -1,0 +1,39 @@
+<%# «فرم‌های چاپی» index (D30): one card per document with its parameters. Locals: today, monthFrom (Jalali inputs). %>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'فرم‌های چاپی', pageCss: 'page-finance' }) %>
+  <link rel="stylesheet" href="/css/print.css?v=<%= assetVersion %>">
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb"><span lang="en" dir="ltr">Printable documents</span></div><h1>فرم‌های چاپی</h1>
+        <p>هر فرم در یک صفحه‌ی آماده‌ی چاپ باز می‌شود؛ با چاپ مرورگر می‌توانید آن را به PDF ذخیره کنید. صورتحساب ویزیت از صفحه‌ی هر ویزیت و پرونده‌ی کامل از صفحه‌ی هر بیمار چاپ می‌شود.</p></div></div>
+
+      <div class="print-cards">
+        <% if (can('finance') && can('patients')) { %>
+        <section class="card"><div class="card-head"><div><h2>گزارش مالی روزانه</h2><p>همه‌ی پرداخت‌ها و بازپرداخت‌های یک روز، با جمع هر روش و هر حساب.</p></div></div>
+          <div class="card-body"><form method="get" action="/print/finance/day">
+            <div class="field"><label for="p1">روز</label><input id="p1" class="input" type="text" name="d" value="<%= today %>" inputmode="numeric" dir="ltr" data-jalali></div>
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-print"/></svg>نمایش فرم</button></form></div></section>
+        <% } %>
+        <% if (can('finance') && can('patients') && can('visits')) { %>
+        <section class="card"><div class="card-head"><div><h2>فهرست ویزیت‌های روز</h2><p>ویزیت‌های یک روز با شماره‌ی ویزیت، مبلغ، پرداخت، روش و حساب، و جمع روز.</p></div></div>
+          <div class="card-body"><form method="get" action="/print/visits/day">
+            <div class="field"><label for="p2">روز</label><input id="p2" class="input" type="text" name="d" value="<%= today %>" inputmode="numeric" dir="ltr" data-jalali></div>
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-print"/></svg>نمایش فرم</button></form></div></section>
+        <% } %>
+        <% if (can('storage')) { %>
+        <section class="card"><div class="card-head"><div><h2>کالاهای مصرف‌شده</h2><p>مصرف کالا در یک بازه، به تفکیک کالا یا بیمار، با مبلغ.</p></div></div>
+          <div class="card-body"><form method="get" action="/print/stock/usage">
+            <div class="field"><label for="p3a">از</label><input id="p3a" class="input" type="text" name="from" value="<%= monthFrom %>" inputmode="numeric" dir="ltr" data-jalali></div>
+            <div class="field"><label for="p3b">تا</label><input id="p3b" class="input" type="text" name="to" value="<%= today %>" inputmode="numeric" dir="ltr" data-jalali></div>
+            <div class="field"><label for="p3c">تفکیک</label><select id="p3c" class="select" name="by"><option value="item">بر اساس کالا</option><% if (can('patients')) { %><option value="patient">بر اساس بیمار</option><% } %></select></div>
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-print"/></svg>نمایش فرم</button></form></div></section>
+        <% } %>
+      </div>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

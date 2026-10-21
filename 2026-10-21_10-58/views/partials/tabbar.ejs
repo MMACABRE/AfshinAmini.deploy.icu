@@ -1,0 +1,35 @@
+<%# Phone navigation (D21): a fixed bottom tab bar, shown only under 900 px. Pure HTML and CSS; "بیشتر" is a
+    <details> menu with the remaining pages and sign-out. Locals from res.locals: active, user, can, has, roleLabel. %>
+<nav class="tabbar" aria-label="منوی اصلی موبایل">
+  <a href="/"<%- active === 'dashboard' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-home"/></svg><span>خانه</span></a>
+  <% if (can('patients')) { %>
+  <a href="/patients"<%- active === 'patients' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-users"/></svg><span>بیماران</span></a>
+  <% } %>
+  <% if (can('patients', 2)) { %>
+  <a class="tabbar-new" href="/patients/new" aria-label="ثبت بیمار جدید"><span class="tabbar-plus"><svg class="icon"><use href="#i-plus"/></svg></span><span>جدید</span></a>
+  <% } %>
+  <% if (can('patients') && can('visits')) { %>
+  <a href="/visits"<%- active === 'visits' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-calendar"/></svg><span>ویزیت‌ها</span></a>
+  <% } %>
+  <% if (can('patients')) { %>
+  <a href="/search"<%- active === 'search' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-search"/></svg><span>جستجو</span></a>
+  <% } %>
+  <details class="tabbar-more">
+    <summary<%- ['storage', 'finance', 'print', 'data', 'users', 'audit', 'account', 'contact'].includes(active) ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-more"/></svg><span>بیشتر</span></summary>
+    <div class="tabbar-menu">
+      <div class="tabbar-user">
+        <span class="avatar avatar-sm"><%= Array.from(user.displayName)[0] %></span>
+        <div><b><%= user.displayName %></b><span><%= roleLabel %></span></div>
+      </div>
+      <% if (can('storage')) { %><a href="/storage"><svg class="icon"><use href="#i-box"/></svg>انبار</a><% } %>
+      <% if (can('finance')) { %><a href="/finance"><svg class="icon"><use href="#i-wallet"/></svg>امور مالی</a><% } %>
+      <% if (can('pdf')) { %><a href="/print"><svg class="icon"><use href="#i-print"/></svg>فرم‌های چاپی</a><% } %>
+      <% if (can('data')) { %><a href="/data"><svg class="icon"><use href="#i-swap"/></svg>ورود و خروج داده</a><% } %>
+      <% if (can('users')) { %><a href="/admin/users"><svg class="icon"><use href="#i-users"/></svg>مدیریت کاربران</a><% } %>
+      <% if (has('audit_log')) { %><a href="/admin/audit"><svg class="icon"><use href="#i-shield"/></svg>گزارش فعالیت</a><% } %>
+      <a href="/contact"><svg class="icon"><use href="#i-help"/></svg>تماس با ما</a>
+      <a href="/account"><svg class="icon"><use href="#i-shield"/></svg>حساب کاربری</a>
+      <form method="post" action="/logout"><button class="btn btn-block" type="submit">خروج از حساب</button></form>
+    </div>
+  </details>
+</nav>

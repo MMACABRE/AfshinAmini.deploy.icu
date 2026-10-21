@@ -1,0 +1,243 @@
+<%# Visit page (D27): doctor's note, bill lines with the green «افزودن», discounts, totals, payments, refunds, moves.
+    Locals: visit (with code, names, ongoing/overdue), number, bill (null without finance view), catalog, methods, accounts,
+    targets, errors, values, notice, editPayment, today. Works without JavaScript. %>
+<%
+const full = visit.first_name + ' ' + visit.last_name;
+const STATE = visit.ongoing ? ['chip-ok', 'در جریان'] : visit.overdue ? ['chip-warn', 'زمان گذشته']
+  : ({ scheduled: ['chip-info', 'برنامه‌ریزی‌شده'], done: ['chip-ok', 'انجام‌شده'], cancelled: ['chip-mute', 'لغو‌شده'] })[visit.status];
+const KIND = { payment: 'پرداخت', refund: 'بازپرداخت', move_out: 'انتقال به ویزیت دیگر', move_in: 'انتقال از ویزیت دیگر' };
+const money = (r) => '<span class="money">' + formatMoney(r, cur) + '</span>';
+const v = (k, d = '') => (values && values[k] != null ? values[k] : d);
+const curName = cur === 'R' ? 'ریال' : 'تومان';
+const err = (k) => errors[k] ? '<p class="field-error" role="alert">' + String(errors[k]).replace(/</g, '&lt;') + '</p>' : '';
+const prepay = visit.status === 'scheduled';
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ویزیت ' + full, pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/visits">ویزیت‌ها</a> / <a href="/patients/<%= visit.code %>"><%= full %></a></div>
+      <div class="page-head visit-head">
+        <div>
+          <h1><%= number ? 'ویزیت ' + faDigits(number) : 'ویزیت' %> — <a href="/patients/<%= visit.code %>"><%= full %></a></h1>
+          <div class="meta">
+            <span><span class="mono"><%= visit.code %></span></span>
+            <span><%= formatJalali(visit.visit_date) %> · ساعت <span class="mono"><%= faDigits(visit.visit_time) %></span> تا <span class="mono"><%= faDigits(endTime(visit.visit_time, visit.duration_min)) %></span></span>
+            <span class="chip <%= STATE[0] %>"><%= STATE[1] %></span>
+          </div>
+          <% if (visit.reason) { %><p><%= visit.reason %></p><% } %>
+        </div>
+        <div class="head-actions">
+          <% if (can('visits', 2)) { %><a class="btn btn-sm" href="/visits/<%= visit.id %>/edit?back=<%= encodeURIComponent('/visits/' + visit.id) %>">ویرایش ویزیت</a><% } %>
+          <% if (bill && can('pdf')) { %><a class="btn btn-sm" href="/print/visits/<%= visit.id %>/bill"><svg class="icon"><use href="#i-print"/></svg>چاپ صورتحساب</a><% } %>
+          <% if (can('finance')) { %><a class="btn btn-sm btn-ghost" href="/patients/<%= visit.code %>/history">سوابق درمان و مالی</a><% } %>
+        </div>
+      </div>
+
+      <% if (notice) { %><div class="callout callout-info" role="status"><svg class="icon"><use href="#i-check"/></svg><span><%= notice %></span></div><% } %>
+      <% if (errors.bill) { %><div class="info-box" role="alert"><%= errors.bill %></div><% } %>
+
+      <section class="card" id="note" aria-labelledby="note-h">
+        <div class="card-head"><div><h2 id="note-h">شرح پزشک</h2><p>آنچه پزشک درباره‌ی این ویزیت می‌نویسد.</p></div></div>
+        <% if (can('visits', 2)) { %>
+        <form class="card-body stack" method="post" action="/visits/<%= visit.id %>/note">
+          <label class="sr-only" for="doc-note">شرح پزشک</label>
+          <textarea id="doc-note" class="textarea" name="doctor_note" rows="5" maxlength="5000" placeholder="شرح معاینه، تشخیص و دستورها"><%= visit.doctor_note || '' %></textarea>
+          <div><button class="btn btn-primary" type="submit">ذخیره‌ی شرح</button></div>
+        </form>
+        <% } else { %>
+        <div class="card-body"><div class="notes-box"><%= visit.doctor_note || 'شرحی ثبت نشده است.' %></div></div>
+        <% } %>
+      </section>
+
+      <% if (bill) { %>
+      <section class="card mt-6" id="bill" aria-labelledby="bill-h">
+        <div class="card-head">
+          <div><h2 id="bill-h">صورتحساب</h2><p><%= bill.cancelled ? 'ویزیت لغو شده است و صورتحساب بدهی ندارد.' : 'خدمات و کالاهای این ویزیت، با قیمت روز افزودن.' %></p></div>
+        </div>
+        <% if (bill.lines.length) { %>
+        <div class="table-wrap">
+          <table class="table bill-table">
+            <thead><tr><th scope="col">شرح</th><th scope="col">تعداد</th><th scope="col">قیمت واحد</th><th scope="col">تخفیف</th><th scope="col">مبلغ</th><% if (can('finance', 2)) { %><th scope="col"><span class="sr-only">ویرایش</span></th><% } %></tr></thead>
+            <tbody>
+              <% bill.lines.forEach((l) => { %>
+              <tr>
+                <td data-label="شرح"><b><%= l.name %></b> <span class="chip chip-plain chip-mute"><%= l.kind === 'item' ? 'کالا' : 'خدمت' %></span></td>
+                <td data-label="تعداد"><%= faDigits(l.qty) %></td>
+                <td data-label="قیمت واحد"><% if (l.override_price !== null) { %><span class="money money-strike"><%= formatMoney(l.unit_price, cur) %></span><% } %><%- money(l.override_price ?? l.unit_price) %></td>
+                <td data-label="تخفیف"><%- l.disc ? money(l.disc) + (l.disc_kind === 'percent' ? ' <span class="muted">(' + faDigits(l.disc_value) + '٪)</span>' : '') : '—' %></td>
+                <td data-label="مبلغ"><b><%- money(l.net) %></b></td>
+                <% if (can('finance', 2)) { %>
+                <td data-label="ویرایش">
+                  <details class="line-edit"<%- errors['line' + l.id] ? ' open' : '' %>>
+                    <summary class="btn btn-sm btn-ghost">ویرایش</summary>
+                    <div class="line-edit-body">
+                      <%- err('line' + l.id) %>
+                      <form method="post" action="/visits/<%= visit.id %>/lines/<%= l.id %>/discount" class="inline-form">
+                        <label class="sr-only" for="ld-k-<%= l.id %>">نوع تخفیف</label>
+                        <select id="ld-k-<%= l.id %>" class="select select-sm" name="disc_kind"><option value="amount"<%- l.disc_kind !== 'percent' ? ' selected' : '' %>>مبلغ (<%= curName %>)</option><option value="percent"<%- l.disc_kind === 'percent' ? ' selected' : '' %>>درصد</option></select>
+                        <label class="sr-only" for="ld-v-<%= l.id %>">تخفیف ردیف</label>
+                        <input id="ld-v-<%= l.id %>" class="input input-money" type="text" name="disc_value" inputmode="numeric" dir="ltr" value="<%= l.disc_kind === 'percent' ? l.disc_value : moneyInput(l.disc_value || '', cur) %>" placeholder="تخفیف">
+                        <button class="btn btn-sm" type="submit">ثبت تخفیف</button>
+                      </form>
+                      <% if (has('price_override')) { %>
+                      <form method="post" action="/visits/<%= visit.id %>/lines/<%= l.id %>/price" class="inline-form">
+                        <label class="sr-only" for="lp-<%= l.id %>">قیمت واحد برای این صورتحساب</label>
+                        <input id="lp-<%= l.id %>" class="input input-money" type="text" name="price" inputmode="numeric" dir="ltr" value="<%= moneyInput(l.override_price, cur) %>" placeholder="قیمت تازه (<%= curName %>)">
+                        <button class="btn btn-sm" type="submit">تغییر قیمت</button>
+                      </form>
+                      <p class="hint">خالی گذاشتن قیمت، قیمت فهرست را برمی‌گرداند. تغییر قیمت فقط روی همین صورتحساب است و ثبت می‌شود.</p>
+                      <% } %>
+                      <form method="post" action="/visits/<%= visit.id %>/lines/<%= l.id %>/delete"><button class="btn btn-sm btn-danger" type="submit">حذف ردیف</button></form>
+                    </div>
+                  </details>
+                </td>
+                <% } %>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } else { %>
+        <div class="card-body"><p class="muted">هنوز خدمت یا کالایی به این ویزیت اضافه نشده است.</p></div>
+        <% } %>
+
+        <% if (can('finance', 2) && !bill.cancelled) { %>
+        <form class="card-body add-line" method="post" action="/visits/<%= visit.id %>/lines">
+          <div class="field grow">
+            <label for="add-entry">خدمت یا کالا</label>
+            <select id="add-entry" class="select" name="catalog_id" required>
+              <option value="">انتخاب کنید…</option>
+              <optgroup label="خدمات">
+                <% catalog.filter((c) => c.kind === 'service').forEach((c) => { %><option value="<%= c.id %>"<%- String(v('catalog_id')) === String(c.id) ? ' selected' : '' %>><%= c.name %> — <%= formatMoney(c.sale_price, cur) %></option><% }) %>
+              </optgroup>
+              <optgroup label="کالاها">
+                <% catalog.filter((c) => c.kind === 'item').forEach((c) => { %><option value="<%= c.id %>"<%- String(v('catalog_id')) === String(c.id) ? ' selected' : '' %><%- c.usable ? '' : ' disabled' %>><%= c.name %> — <%= formatMoney(c.sale_price, cur) %> (موجود: <%= faDigits(c.usable) %>)</option><% }) %>
+              </optgroup>
+            </select>
+          </div>
+          <div class="field qty-field">
+            <label for="add-qty">تعداد</label>
+            <input id="add-qty" class="input" type="text" name="qty" value="<%= v('qty', '1') %>" inputmode="numeric" dir="ltr" required>
+          </div>
+          <button class="btn btn-add" type="submit"><svg class="icon"><use href="#i-plus"/></svg>افزودن</button>
+          <% if (errors.line) { %><div class="add-line-error info-box" role="alert"><%= errors.line %></div><% } %>
+        </form>
+        <% } %>
+
+        <div class="card-body bill-foot">
+          <% if (can('finance', 2) && !bill.cancelled) { %>
+          <form class="inline-form" method="post" action="/visits/<%= visit.id %>/discount">
+            <label for="bd-v">تخفیف کل صورتحساب</label>
+            <select class="select select-sm" name="disc_kind" aria-label="نوع تخفیف"><option value="amount"<%- visit.disc_kind !== 'percent' ? ' selected' : '' %>>مبلغ (<%= curName %>)</option><option value="percent"<%- visit.disc_kind === 'percent' ? ' selected' : '' %>>درصد</option></select>
+            <input id="bd-v" class="input input-money" type="text" name="disc_value" inputmode="numeric" dir="ltr" value="<%= visit.disc_kind === 'percent' ? visit.disc_value : moneyInput(visit.disc_value || '', cur) %>" placeholder="۰">
+            <button class="btn btn-sm" type="submit">ثبت</button>
+            <%- err('billDisc') %>
+          </form>
+          <% } %>
+          <dl class="totals" aria-label="جمع صورتحساب">
+            <div><dt>جمع کل</dt><dd><%- money(bill.gross) %></dd></div>
+            <div><dt>تخفیف<% if (visit.disc_kind) { %> <span class="muted">(کل: <%= describeDiscount(visit.disc_kind, visit.disc_value, cur) %>)</span><% } %></dt><dd><%- money(bill.discount) %></dd></div>
+            <div class="totals-strong"><dt>قابل پرداخت</dt><dd><%- money(bill.owed) %></dd></div>
+            <div><dt>پرداخت‌شده</dt><dd><%- money(bill.paid) %></dd></div>
+            <% if (bill.credit) { %>
+            <div class="totals-credit"><dt>بستانکار</dt><dd><%- money(bill.credit) %></dd></div>
+            <% } else { %>
+            <div class="totals-remaining<%= bill.remaining ? '' : ' is-zero' %>"><dt>مانده</dt><dd><%- money(bill.remaining) %></dd></div>
+            <% } %>
+          </dl>
+        </div>
+      </section>
+
+      <section class="card mt-6" id="pay" aria-labelledby="pay-h">
+        <div class="card-head"><div><h2 id="pay-h">پرداخت‌ها</h2><p>هر پرداخت در روز خودش درآمد حساب می‌شود.<% if (prepay) { %> پرداخت پیش از ویزیت، پیش‌پرداخت است.<% } %></p></div></div>
+        <% if (bill.payments.length) { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">تاریخ</th><th scope="col">نوع</th><th scope="col">مبلغ</th><th scope="col">روش</th><th scope="col">حساب</th><th scope="col">ثبت‌کننده</th><% if (can('finance', 2)) { %><th scope="col"><span class="sr-only">اقدام</span></th><% } %></tr></thead>
+            <tbody>
+              <% bill.payments.forEach((p) => { %>
+              <tr>
+                <td data-label="تاریخ"><%= formatJalali(p.paid_on, 'short') %></td>
+                <td data-label="نوع"><%= KIND[p.kind] %><% if (p.kind === 'payment' && p.paid_on < visit.visit_date) { %> <span class="chip chip-info chip-plain">پیش‌پرداخت</span><% } %><% if (p.other_date) { %> <span class="muted">(<%= formatJalali(p.other_date, 'short') %>)</span><% } %></td>
+                <td data-label="مبلغ"><b class="<%= p.amount < 0 ? 'qty-out' : '' %>"><%- money(p.amount) %></b></td>
+                <td data-label="روش"><%= p.method || '—' %></td>
+                <td data-label="حساب"><%= p.account || '—' %></td>
+                <td data-label="ثبت‌کننده"><%= p.who || '—' %></td>
+                <% if (can('finance', 2)) { %>
+                <td data-label="اقدام"><div class="user-actions">
+                  <% if (!p.move_id) { %><a class="btn btn-sm btn-ghost" href="/visits/<%= visit.id %>/payments/<%= p.id %>/edit#pay">ویرایش</a><% } %>
+                  <%- include('../partials/confirm-delete', { action: '/visits/' + visit.id + '/payments/' + p.id + '/delete', question: p.move_id ? 'این انتقال (هر دو طرف) حذف شود؟' : 'این پرداخت حذف شود؟', back: '' }) %>
+                </div></td>
+                <% } %>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } else { %>
+        <div class="card-body"><p class="muted">هنوز پرداختی ثبت نشده است.</p></div>
+        <% } %>
+
+        <% if (can('finance', 2) && editPayment) { const ep = editPayment; %>
+        <form class="card-body form-grid form-grid-3 pay-form pay-edit" method="post" action="/visits/<%= visit.id %>/payments/<%= ep.id %>/edit">
+          <h3 class="span-all">ویرایش <%= KIND[ep.kind] %></h3>
+          <%- errors.edit ? '<div class="info-box span-all" role="alert">' + String(errors.edit).replace(/</g, '&lt;') + '</div>' : '' %>
+          <div class="field"><label for="pe-amount">مبلغ (<%= curName %>)</label><input id="pe-amount" class="input input-money" type="text" name="amount" inputmode="numeric" dir="ltr" value="<%= moneyInput(Math.abs(ep.amount), cur) %>" required></div>
+          <div class="field"><label for="pe-date">تاریخ</label><input id="pe-date" class="input" type="text" name="paid_on" inputmode="numeric" dir="ltr" data-jalali value="<%= toJalaliInput(ep.paid_on) %>" required></div>
+          <div class="field"><label for="pe-method">روش پرداخت</label><select id="pe-method" class="select" name="method_id"><% methods.forEach((m) => { %><option value="<%= m.id %>"<%- m.id === ep.method_id ? ' selected' : '' %>><%= m.name %></option><% }) %></select></div>
+          <div class="field"><label for="pe-account">حساب</label><select id="pe-account" class="select" name="account_id"><% accounts.forEach((a) => { %><option value="<%= a.id %>"<%- a.id === ep.account_id ? ' selected' : '' %>><%= a.name %></option><% }) %></select></div>
+          <div class="field span-2"><label for="pe-note">یادداشت</label><input id="pe-note" class="input" type="text" name="note" maxlength="200" value="<%= ep.note || '' %>"></div>
+          <div class="form-actions span-all"><button class="btn btn-primary" type="submit">ذخیره‌ی تغییر</button><a class="btn btn-ghost" href="/visits/<%= visit.id %>#pay">انصراف</a></div>
+        </form>
+        <% } else if (can('finance', 2) && !bill.cancelled) { %>
+        <form class="card-body form-grid form-grid-3 pay-form" method="post" action="/visits/<%= visit.id %>/payments">
+          <h3 class="span-all">ثبت پرداخت<% if (prepay) { %> <span class="chip chip-info chip-plain">پیش‌پرداخت</span><% } %></h3>
+          <% if (errors.pay) { %><div class="info-box span-all" role="alert"><%= errors.pay %></div><% } %>
+          <div class="field"><label for="p-amount">مبلغ (<%= curName %>)</label><input id="p-amount" class="input input-money" type="text" name="amount" inputmode="numeric" dir="ltr" value="<%= v('amount', moneyInput(bill.remaining || '', cur)) %>" required></div>
+          <div class="field"><label for="p-date">تاریخ</label><input id="p-date" class="input" type="text" name="paid_on" inputmode="numeric" dir="ltr" data-jalali value="<%= v('paid_on', today) %>"></div>
+          <div class="field"><label for="p-method">روش پرداخت</label><select id="p-method" class="select" name="method_id" required><% methods.forEach((m, i) => { %><option value="<%= m.id %>"<%- String(v('method_id', methods[0] && methods[0].id)) === String(m.id) ? ' selected' : '' %>><%= m.name %></option><% }) %></select></div>
+          <div class="field"><label for="p-account">حساب</label><select id="p-account" class="select" name="account_id"><option value="">حساب پیش‌فرض روش پرداخت</option><% accounts.forEach((a) => { %><option value="<%= a.id %>"<%- String(v('account_id')) === String(a.id) ? ' selected' : '' %>><%= a.name %></option><% }) %></select></div>
+          <div class="field span-2"><label for="p-note">یادداشت (اختیاری)</label><input id="p-note" class="input" type="text" name="note" maxlength="200" value="<%= v('note') %>"></div>
+          <div class="form-actions span-all">
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>ثبت پرداخت</button>
+            <% if (bill.remaining) { %><button class="btn" type="submit" name="full" value="1" formnovalidate>پرداخت کامل (<%= formatMoney(bill.remaining, cur) %>)</button><% } %>
+          </div>
+        </form>
+        <% } %>
+
+        <% if (can('finance', 2) && bill.credit && !editPayment) { %>
+        <div class="card-body credit-box">
+          <div class="callout callout-info"><svg class="icon"><use href="#i-alert"/></svg><span>این ویزیت <b><%- money(bill.credit) %></b> بستانکار دارد. آن را به بیمار برگردانید یا به ویزیت دیگری از همین بیمار منتقل کنید.</span></div>
+          <div class="credit-forms">
+            <form class="stack" method="post" action="/visits/<%= visit.id %>/refund">
+              <h3>بازپرداخت به بیمار</h3>
+              <%- err('refund') %>
+              <div class="field"><label for="r-amount">مبلغ (<%= curName %>)</label><input id="r-amount" class="input input-money" type="text" name="amount" inputmode="numeric" dir="ltr" value="<%= moneyInput(bill.credit, cur) %>" required></div>
+              <div class="field"><label for="r-method">روش</label><select id="r-method" class="select" name="method_id"><% methods.forEach((m) => { %><option value="<%= m.id %>"><%= m.name %></option><% }) %></select></div>
+              <div class="field"><label for="r-account">از حساب</label><select id="r-account" class="select" name="account_id"><option value="">حساب پیش‌فرض روش</option><% accounts.forEach((a) => { %><option value="<%= a.id %>"><%= a.name %></option><% }) %></select></div>
+              <input type="hidden" name="paid_on" value="<%= today %>">
+              <div><button class="btn btn-danger" type="submit">ثبت بازپرداخت</button></div>
+            </form>
+            <% if (targets.length) { %>
+            <form class="stack" method="post" action="/visits/<%= visit.id %>/move">
+              <h3>انتقال به ویزیت دیگر</h3>
+              <%- err('move') %>
+              <div class="field"><label for="m-to">ویزیت مقصد</label><select id="m-to" class="select" name="to" required><% targets.forEach((tv) => { %><option value="<%= tv.id %>"><%= formatJalali(tv.visit_date, 'short') %> · <%= faDigits(tv.visit_time) %></option><% }) %></select></div>
+              <div class="field"><label for="m-amount">مبلغ (<%= curName %>)</label><input id="m-amount" class="input input-money" type="text" name="amount" inputmode="numeric" dir="ltr" value="<%= moneyInput(bill.credit, cur) %>" required></div>
+              <div><button class="btn" type="submit">انتقال اعتبار</button></div>
+            </form>
+            <% } %>
+          </div>
+        </div>
+        <% } %>
+      </section>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

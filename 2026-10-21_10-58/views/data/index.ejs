@@ -1,0 +1,172 @@
+<%
+const { STATUS } = labels;
+const fa = (n) => faDigits(Number(n).toLocaleString('en-US').replace(/,/g, '٬'));
+const kb = (n) => (n < 1024 ? 'کمتر از ۱ کیلوبایت' : fa(Math.round(n / 1024)) + ' کیلوبایت');
+const stateChip = { valid: ['chip-ok', 'معتبر'], invalid: ['chip-crit', 'نامعتبر'], duplicate: ['chip-warn', 'تکراری'] };
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ورود و خروج داده', pageCss: 'page-import-export' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Import &amp; Export</span></div>
+          <h1>ورود و خروج داده</h1>
+          <p>بیماران را از فایل CSV وارد کنید، فهرست بیماران را خروجی بگیرید یا یک نسخه‌ی کامل از همه‌ی اطلاعات دریافت کنید. هر بخش این صفحه فقط برای کاربرانی دیده می‌شود که دسترسی آن را دارند.</p>
+        </div>
+      </div>
+
+      <% if (has('csv_import')) { %>
+      <section aria-labelledby="import-h">
+        <h2 id="import-h" class="h2-lg">ورود بیماران از فایل CSV</h2>
+
+        <% if (result) { %>
+        <div class="callout callout-info" role="status">
+          <svg class="icon"><use href="#i-check"/></svg>
+          <span><b><%= fa(result.inserted) %> بیمار ثبت شد.</b><% if (result.skipped) { %> <%= fa(result.skipped) %> ردیف به‌دلیل تکراری بودن کد ملی رد شد.<% } %> <a href="/patients">مشاهده‌ی فهرست بیماران</a></span>
+        </div>
+        <% } %>
+
+        <% if (preview) { %>
+        <ul class="steps mb-6">
+          <li class="is-done"><span>بارگذاری فایل</span></li>
+          <li class="is-active"><span>بررسی ردیف‌ها</span></li>
+          <li><span>تأیید و ثبت</span></li>
+        </ul>
+
+        <section class="card" aria-labelledby="preview-h">
+          <div class="card-head">
+            <div>
+              <h3 id="preview-h">پیش‌نمایش و بررسی ردیف‌ها</h3>
+              <p>هر ردیف پیش از ثبت بررسی می‌شود. فقط ردیف‌های معتبر ثبت می‌شوند.</p>
+            </div>
+          </div>
+          <div class="card-body stack-lg">
+            <div class="file-row">
+              <svg class="icon icon-muted"><use href="#i-file"/></svg>
+              <div class="grow">
+                <b class="block-sm"><span class="mono"><%= preview.fileName %></span></b>
+                <span class="text-xs-muted"><%= kb(preview.size) %> · <%= fa(preview.total) %> ردیف</span>
+              </div>
+            </div>
+            <section class="grid grid-3" aria-label="آمار بررسی فایل">
+              <article class="card stat"><div class="stat-label">ردیف معتبر</div><div class="stat-value"><%= fa(preview.counts.valid) %></div></article>
+              <article class="card stat"><div class="stat-label">ردیف نامعتبر</div><div class="stat-value"><%= fa(preview.counts.invalid) %></div></article>
+              <article class="card stat"><div class="stat-label">ردیف تکراری</div><div class="stat-value"><%= fa(preview.counts.duplicate) %></div></article>
+            </section>
+            <% if (preview.counts.duplicate) { %>
+            <div class="callout callout-info">
+              <svg class="icon"><use href="#i-alert"/></svg>
+              <span><b><%= fa(preview.counts.duplicate) %> ردیف تکراری رد می‌شوند.</b> کد ملی این ردیف‌ها پیش‌تر در سامانه ثبت شده یا در همین فایل تکرار شده است.</span>
+            </div>
+            <% } %>
+          </div>
+          <div class="table-wrap">
+            <table class="table">
+              <thead><tr><th scope="col">ردیف</th><th scope="col">کد ملی</th><th scope="col">نام و نام خانوادگی</th><th scope="col">تاریخ تولد</th><th scope="col">تلفن</th><th scope="col">وضعیت</th><th scope="col">توضیح</th></tr></thead>
+              <tbody>
+                <% preview.shown.forEach((r) => { const v = r.values; %>
+                <tr>
+                  <td data-label="ردیف" class="num"><%= faDigits(r.line) %></td>
+                  <td data-label="کد ملی"><span class="mono"><%= v.national_id || '—' %></span></td>
+                  <td data-label="نام و نام خانوادگی"><%= v.first_name %> <%= v.last_name %></td>
+                  <td data-label="تاریخ تولد"><%= v.birth_date ? faDigits(preview.shownDate(v)) : '—' %></td>
+                  <td data-label="تلفن"><span class="mono"><%= v.phone || '—' %></span></td>
+                  <td data-label="وضعیت"><span class="chip <%= stateChip[r.state][0] %> chip-plain"><%= stateChip[r.state][1] %></span></td>
+                  <td data-label="توضیح"><%= r.note %></td>
+                </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <div class="card-foot"><span>نمایش <%= fa(preview.shown.length) %> ردیف از <%= fa(preview.total) %> ردیف</span></div>
+        </section>
+
+        <form method="post" action="/data/import/confirm" class="confirm-bar mt-6">
+          <input type="hidden" name="token" value="<%= preview.token %>">
+          <p><b><%= fa(preview.counts.valid) %> ردیف معتبر ثبت می‌شود.</b> ردیف‌های نامعتبر و تکراری ثبت نمی‌شوند.</p>
+          <div class="confirm-actions">
+            <button class="btn" type="submit" formaction="/data/import/cancel">انصراف</button>
+            <% if (preview.counts.valid > 0) { %><button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>تأیید و ثبت ردیف‌های معتبر</button><% } %>
+          </div>
+        </form>
+        <% } else { %>
+        <section class="card" aria-labelledby="upload-h">
+          <div class="card-head">
+            <div>
+              <h3 id="upload-h">بارگذاری فایل</h3>
+              <p>فایل را با الگوی ثابت سامانه تهیه کنید تا ستون‌ها بدون تنظیم اضافی شناخته شوند.</p>
+            </div>
+          </div>
+          <div class="card-body stack-lg">
+            <% if (error) { %><div class="info-box" role="alert"><%= error %></div><% } %>
+            <div>
+              <a class="btn" href="/data/template.csv"><svg class="icon"><use href="#i-download"/></svg>دانلود الگوی CSV</a>
+              <p class="text-xs-muted mt-3">ستون‌های الگو: <%= templateColumns.join('، ') %>. فقط «نام» و «نام خانوادگی» اجباری است. تاریخ تولد را به شکل ۱۳۶۸/۰۴/۱۲ بنویسید. حداکثر <%= fa(maxRows) %> ردیف و ۵ مگابایت در هر بار.</p>
+            </div>
+            <form method="post" action="/data/import" enctype="multipart/form-data" class="stack">
+              <%- include('../partials/dropzone', { id: 'csv-file', name: 'csv_file', accept: '.csv,text/csv', hint: 'فایل CSV بیماران · حداکثر ۵ مگابایت' }) %>
+              <div><button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-upload"/></svg>بارگذاری و بررسی</button></div>
+            </form>
+          </div>
+        </section>
+        <% } %>
+      </section>
+      <% } %>
+
+      <section aria-labelledby="export-h" class="mt-6">
+        <h2 id="export-h" class="h2-lg">خروجی گرفتن از فهرست بیماران</h2>
+        <section class="card" aria-labelledby="export-form-h">
+          <div class="card-head">
+            <div>
+              <h3 id="export-form-h">تنظیمات خروجی</h3>
+              <p>فهرست بیماران به صورت فایل Excel (راست‌به‌چپ) یا CSV دریافت می‌شود. خروجی نتیجه‌ی یک جستجو را از صفحه‌ی <a href="/search">جستجوی پیشرفته</a> بگیرید.</p>
+            </div>
+          </div>
+          <div class="card-body">
+            <form method="post" action="/data/export/patients.xlsx" class="stack-lg">
+              <div class="field">
+                <label for="export-status">وضعیت بیمار</label>
+                <select class="select" id="export-status" name="status">
+                  <option value="">همه‌ی بیماران</option>
+                  <% Object.entries(STATUS).forEach(([k, s]) => { %><option value="<%= k %>"><%= s.label %></option><% }) %>
+                </select>
+              </div>
+              <div class="flex-row">
+                <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-download"/></svg>دانلود Excel (راست‌به‌چپ)</button>
+                <button class="btn" type="submit" formaction="/data/export/patients.csv">دانلود CSV</button>
+              </div>
+            </form>
+          </div>
+          <div class="callout callout-info">
+            <svg class="icon"><use href="#i-shield"/></svg>
+            <span><b>همه‌ی خروجی‌ها در گزارش فعالیت ثبت می‌شوند.</b> فایل Excel با برگه‌ی راست‌به‌چپ باز می‌شود. فایل CSV جهت ندارد و Excel آن را چپ‌به‌راست نشان می‌دهد؛ برای ورود دوباره‌ی داده یا برنامه‌های دیگر مناسب است.</span>
+          </div>
+        </section>
+      </section>
+
+      <% if (has('full_zip')) { %>
+      <section class="card zip-card mt-6" aria-labelledby="zip-h">
+        <div class="zip-body">
+          <h2 id="zip-h" class="zip-title">دریافت همه‌ی اطلاعات</h2>
+          <p>یک فایل ZIP شامل این موارد دریافت می‌شود:</p>
+          <ul class="zip-list">
+            <li>یک نسخه‌ی کامل از پایگاه داده</li>
+            <li>فایل <span class="mono">patients.csv</span> با فهرست همه‌ی بیماران</li>
+            <li>پوشه‌ی هر بیمار همراه با فایل <span class="mono">info.csv</span> و پرونده‌های او</li>
+          </ul>
+          <p class="text-xs-muted">این فایل اطلاعات محرمانه‌ی بیماران را دارد. آن را در جای امن نگه دارید. آماده‌شدن آن ممکن است چند دقیقه طول بکشد.</p>
+        </div>
+        <form method="post" action="/data/export/full.zip" class="zip-action">
+          <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-download"/></svg>دانلود فایل ZIP</button>
+        </form>
+      </section>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

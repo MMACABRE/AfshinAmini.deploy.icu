@@ -1,0 +1,81 @@
+# Glossary
+
+Shared language for the clinic app. Persian UI term in brackets where one is fixed.
+
+## Patients and visits
+
+**Patient** — a person with a record and an immutable patient code such as `P-000123`.
+
+**Visit** [ویزیت] — one planned or past appointment of a patient with the clinic's single doctor. Has a status: scheduled, done or cancelled.
+
+**Visit number** — the position of a visit among the patient's non-cancelled visits, by date ("first, second…"). May shift when an earlier visit is cancelled.
+
+**Doctor's note** [شرح پزشک] — what the doctor writes about a visit. Distinct from the visit's general notes.
+
+**Treatment and finance history** [سوابق درمان و مالی] — the page of one patient listing all their visits, services, items, bills and payments.
+
+**Uploaded document** [مدارک] — a file stored in the patient's folder (PDF, image, DICOM). Never called a "PDF document" or "form".
+
+## Storage
+
+**Stock item** [کالا] — something the clinic keeps and uses on patients, such as an ampoule or a glove. Counted in single pieces, never boxes.
+
+**Stock-in** [ورود کالا] — recording that the clinic bought some quantity of a stock item, with an optional purchase cost and an optional expiry date.
+
+**Lot** — the stock left from one stock-in, with its own expiry date and remaining count. A stock item is the sum of its lots.
+
+**Use** — taking stock out for a visit. Always taken from the earliest-expiring usable lot first.
+
+**Adjustment** — a correction to stock outside a visit: a count correction or waste, always with a reason. Writing off an expired lot is waste.
+
+**Low-stock alert** — a warning (default at 10 pieces) or critical (default at 5) level, set globally and overridable per stock item.
+
+**Expiry alert** — yellow from 30 days before a lot's expiry, red from 10 days before, and «منقضی شده» once expired until the lot is written off. An expired lot cannot be used.
+
+**Alerts card** [هشدارها] — the dashboard card listing low-stock and expiry alerts.
+
+## Finance
+
+**Catalog** — the clinic-defined list of services and stock items with their sale prices. Includes fixed prices such as the visit fee.
+
+**Service** [خدمت] — a chargeable act that is not stock, such as a visit fee or an operation fee.
+
+**Sale price** — what a patient is charged for a catalog entry. Required.
+
+**Purchase cost** — what the clinic paid a provider for a stock item. Optional, never charged to the patient.
+
+**Visit bill** [صورتحساب] — the charges of one visit: its lines, discounts and payments.
+
+**Line** — one service or stock item on a visit bill, with quantity and the price frozen at the moment it was added. Its price may be overridden for that bill only.
+
+**Discount** [تخفیف] — a reduction given as an amount or a percent, on a line, on a whole bill, or as a patient's standing discount applied to their new bills.
+
+**Payment** [پرداخت] — money received for one visit, with an amount, a date, a payment method and a clinic account. A bill may have several.
+
+**Prepayment** [پیش‌پرداخت] — a payment made before the visit has happened.
+
+**Refund** — money paid back to a patient, recorded with a method and account.
+
+**Payment method** — how money moved: cash, card, mobile transfer and so on. An editable list.
+
+**Clinic account** — where the money went: the cash box or a bank account. An editable list.
+
+**Remaining** [مانده] — what a patient still owes on a bill: total minus discounts minus payments.
+
+**Credit** [بستانکار] — money a patient has paid beyond what a bill now owes, for example after a cancelled visit with a prepayment.
+
+**Income** — payments counted on the day they were received, never on the visit's day.
+
+**Display currency** — Rial or Toman, one switch for the whole site. Every amount carries an `R` or `T`.
+
+## PDF documents
+
+**PDF document** [فرم چاپی] — a generated, styled, ready-to-print report such as a daily finance report or a visit bill. Never called just "document", which means an uploaded document.
+
+## Access
+
+**Owner** — the protected account of the person who runs the site. Always has every permission and cannot be restricted or deleted.
+
+**Permission** — what one user may do in one area: none, view or edit, plus extra checkboxes for dangerous actions. A missing permission means the feature is both hidden and refused.
+
+**Preset** — a named set of permissions applied to a user in one step, then fine-tuned.
