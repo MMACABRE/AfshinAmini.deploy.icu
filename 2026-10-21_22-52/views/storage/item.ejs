@@ -1,0 +1,128 @@
+<%# One stock item. Locals: item, lots (with level), moves, usable, settings, inValues, inErrors, lotError, notice. %>
+<%
+const EXP = { expired: ['chip-crit', 'منقضی شده'], crit: ['chip-crit', 'کمتر از ۱۰ روز'], warn: ['chip-warn', 'کمتر از ۳۰ روز'] };
+const REASON = { in: 'ورود کالا', use: 'مصرف در ویزیت', return: 'برگشت از صورتحساب', count: 'اصلاح شمارش', waste: 'ضایعات' };
+const iv = (k) => inValues[k] ?? '';
+const ie = (k) => inErrors[k];
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: item.name, pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/storage">انبار</a> / <%= item.name %></div>
+      <div class="page-head">
+        <div>
+          <h1><%= item.name %><% if (!item.active) { %> <span class="chip chip-mute">غیرفعال</span><% } %></h1>
+          <p>قیمت فروش <span class="money"><%= formatMoney(item.sale_price, cur) %></span><% if (item.purchase_cost !== null) { %> · قیمت خرید <span class="money"><%= formatMoney(item.purchase_cost, cur) %></span><% } %>
+            · حد هشدار <%= faDigits(item.low_warn ?? settings.low_warn) %> و بحرانی <%= faDigits(item.low_crit ?? settings.low_crit) %> عدد</p>
+        </div>
+        <div class="stock-total"><span>موجود قابل مصرف</span><b><%= faDigits(usable) %></b><small>عدد</small></div>
+      </div>
+
+      <% if (notice) { %><div class="callout callout-info" role="status"><svg class="icon"><use href="#i-check"/></svg><span><%= notice %></span></div><% } %>
+
+      <% if (can('storage', 2)) { %>
+      <section class="card" aria-labelledby="in-h">
+        <div class="card-head"><div><h2 id="in-h">ورود کالا</h2><p>هر ورود یک بسته با تاریخ انقضای خودش می‌سازد.</p></div></div>
+        <form class="card-body form-grid form-grid-3" method="post" action="/storage/items/<%= item.id %>/in">
+          <div class="field">
+            <label for="in-qty">تعداد (عدد)</label>
+            <input id="in-qty" class="input" type="text" name="qty" value="<%= iv('qty') %>" inputmode="numeric" dir="ltr" required<%- ie('qty') ? ' aria-invalid="true" aria-describedby="in-qty-err"' : '' %>>
+            <% if (ie('qty')) { %><p class="field-error" id="in-qty-err" role="alert"><%= ie('qty') %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="in-exp">تاریخ انقضا (اختیاری)</label>
+            <input id="in-exp" class="input" type="text" name="expires_on" value="<%= iv('expires_on') %>" placeholder="۱۴۰۵/۰۸/۱۵" inputmode="numeric" dir="ltr" data-jalali<%- ie('expires_on') ? ' aria-invalid="true" aria-describedby="in-exp-err"' : '' %>>
+            <% if (ie('expires_on')) { %><p class="field-error" id="in-exp-err" role="alert"><%= ie('expires_on') %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="in-cost">قیمت خرید هر عدد (اختیاری)</label>
+            <input id="in-cost" class="input input-money" type="text" name="unit_cost" value="<%= iv('unit_cost') %>" inputmode="numeric" dir="ltr"<%- ie('unit_cost') ? ' aria-invalid="true" aria-describedby="in-cost-err"' : '' %>>
+            <% if (ie('unit_cost')) { %><p class="field-error" id="in-cost-err" role="alert"><%= ie('unit_cost') %></p><% } %>
+          </div>
+          <div class="form-actions span-all"><button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-plus"/></svg>ثبت ورود</button></div>
+        </form>
+      </section>
+      <% } %>
+
+      <section class="card mt-6" aria-labelledby="lots-h">
+        <div class="card-head"><div><h2 id="lots-h">بسته‌ها</h2><p>به ترتیب مصرف: زودتر منقضی‌شونده بالاتر است.</p></div></div>
+        <% if (!lots.length) { %>
+        <div class="card-body"><p class="muted">هنوز ورودی ثبت نشده است.</p></div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">تاریخ ورود</th><th scope="col">انقضا</th><th scope="col">ورودی</th><th scope="col">مانده</th><th scope="col">قیمت خرید</th><% if (has('stock_adjust')) { %><th scope="col"><span class="sr-only">اصلاح</span></th><% } %></tr></thead>
+            <tbody>
+              <% lots.forEach((l) => { %>
+              <tr class="<%= l.remaining === 0 ? 'row-mute' : '' %>">
+                <td data-label="تاریخ ورود"><%= formatJalali(l.received_on, 'short') %></td>
+                <td data-label="انقضا"><%= l.expires_on ? formatJalali(l.expires_on, 'short') : 'ندارد' %><% if (l.level) { %> <span class="chip <%= EXP[l.level][0] %>"><%= EXP[l.level][1] %></span><% } %></td>
+                <td data-label="ورودی"><%= faDigits(l.qty_in) %></td>
+                <td data-label="مانده"><b><%= faDigits(l.remaining) %></b></td>
+                <td data-label="قیمت خرید"><%- l.unit_cost !== null ? '<span class="money">' + formatMoney(l.unit_cost, cur) + '</span>' : '—' %></td>
+                <% if (has('stock_adjust')) { %>
+                <td data-label="اصلاح">
+                  <details class="lot-fix"<%- lotError && lotError.id === l.id ? ' open' : '' %>>
+                    <summary class="btn btn-sm btn-ghost">اصلاح</summary>
+                    <div class="lot-fix-body">
+                      <% if (lotError && lotError.id === l.id) { %><p class="field-error" role="alert"><%= lotError.text %></p><% } %>
+                      <form method="post" action="/storage/lots/<%= l.id %>/count" class="lot-form">
+                        <label class="sr-only" for="c-<%= l.id %>">تعداد شمارش‌شده</label>
+                        <input id="c-<%= l.id %>" class="input" type="text" name="counted" inputmode="numeric" dir="ltr" placeholder="شمارش واقعی" required>
+                        <label class="sr-only" for="cn-<%= l.id %>">دلیل</label>
+                        <input id="cn-<%= l.id %>" class="input" type="text" name="note" maxlength="200" placeholder="دلیل" required>
+                        <button class="btn btn-sm" type="submit">ثبت شمارش</button>
+                      </form>
+                      <% if (l.remaining > 0) { %>
+                      <form method="post" action="/storage/lots/<%= l.id %>/waste" class="lot-form">
+                        <label class="sr-only" for="w-<%= l.id %>">تعداد ضایعات</label>
+                        <input id="w-<%= l.id %>" class="input" type="text" name="qty" inputmode="numeric" dir="ltr" placeholder="تعداد" value="<%= l.level === 'expired' ? l.remaining : '' %>" required>
+                        <label class="sr-only" for="wn-<%= l.id %>">دلیل</label>
+                        <input id="wn-<%= l.id %>" class="input" type="text" name="note" maxlength="200" placeholder="دلیل" value="<%= l.level === 'expired' ? 'منقضی شده' : '' %>" required>
+                        <button class="btn btn-sm btn-danger" type="submit">ثبت ضایعات</button>
+                      </form>
+                      <% } %>
+                    </div>
+                  </details>
+                </td>
+                <% } %>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </section>
+
+      <section class="card mt-6" aria-labelledby="moves-h">
+        <div class="card-head"><div><h2 id="moves-h">گردش کالا</h2><p>۵۰ رویداد آخر</p></div></div>
+        <% if (!moves.length) { %>
+        <div class="card-body"><p class="muted">گردشی ثبت نشده است.</p></div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">زمان</th><th scope="col">نوع</th><th scope="col">تعداد</th><th scope="col">توضیح</th><th scope="col">کاربر</th></tr></thead>
+            <tbody>
+              <% moves.forEach((m) => { %>
+              <tr>
+                <td data-label="زمان"><%= formatJalaliDateTime(m.ts) %></td>
+                <td data-label="نوع"><%= REASON[m.reason] %></td>
+                <td data-label="تعداد"><span class="qty <%= m.qty < 0 ? 'qty-out' : 'qty-in' %>"><%= m.qty > 0 ? '+' : '−' %><%= faDigits(Math.abs(m.qty)) %></span></td>
+                <td data-label="توضیح"><%= m.note || '—' %></td>
+                <td data-label="کاربر"><%= m.who || '—' %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>
