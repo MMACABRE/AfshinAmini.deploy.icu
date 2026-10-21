@@ -1,0 +1,81 @@
+<%
+const fa = (n) => faDigits(Number(n).toLocaleString('en-US').replace(/,/g, '٬'));
+const href = (page) => {
+  const q = new URLSearchParams();
+  if (filters.user) q.set('user', filters.user);
+  if (filters.action) q.set('action', filters.action);
+  if (filters.patient) q.set('patient', filters.patient);
+  if (page > 1) q.set('page', page);
+  const s = q.toString();
+  return '/admin/audit' + (s ? '?' + s : '');
+};
+const from = total === 0 ? 0 : (page - 1) * pageSize + 1;
+const to = Math.min(total, page * pageSize);
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'گزارش فعالیت', pageCss: 'page-admin' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Activity Log</span></div>
+          <h1>گزارش فعالیت</h1>
+          <p>هر ورود، ویرایش، بارگذاری، دریافت فایل و خروجی اینجا ثبت می‌شود. <%= fa(total) %> مورد پیدا شد.</p>
+        </div>
+      </div>
+
+      <section class="card">
+        <form class="toolbar" method="get" action="/admin/audit">
+          <select class="select" name="user" aria-label="فیلتر بر اساس کاربر">
+            <option value="">همه‌ی کاربران</option>
+            <% users.forEach((u) => { %><option value="<%= u.id %>"<%- String(filters.user) === String(u.id) ? ' selected' : '' %>><%= u.display_name %> (<%= u.username %>)</option><% }) %>
+          </select>
+          <select class="select" name="action" aria-label="فیلتر بر اساس رویداد">
+            <option value="">همه‌ی رویدادها</option>
+            <% Object.entries(actions).forEach(([k, l]) => { %><option value="<%= k %>"<%- filters.action === k ? ' selected' : '' %>><%= l %></option><% }) %>
+          </select>
+          <input class="input" type="text" name="patient" value="<%= filters.patient %>" placeholder="کد بیمار (P-000123)" aria-label="فیلتر بر اساس کد بیمار" dir="ltr" maxlength="20">
+          <button class="btn btn-primary" type="submit">اعمال</button>
+          <a class="link-secondary" href="/admin/audit">پاک‌کردن فیلترها</a>
+        </form>
+        <% if (patientNote) { %><div class="info-box" role="alert"><%= patientNote %></div><% } %>
+
+        <% if (rows.length === 0) { %>
+        <div class="card-body"><p class="muted">موردی پیدا نشد.</p></div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">زمان</th><th scope="col">کاربر</th><th scope="col">رویداد</th><th scope="col">بیمار</th><th scope="col">جزئیات</th></tr></thead>
+            <tbody>
+              <% rows.forEach((r) => { %>
+              <tr>
+                <td data-label="زمان"><span class="text-sm"><%= faDigits(formatJalaliDateTime(r.ts)) %></span></td>
+                <td data-label="کاربر"><%= r.display_name || '—' %><% if (r.username) { %> <span class="mono text-xs-subtle"><%= r.username %></span><% } %></td>
+                <td data-label="رویداد"><%= actions[r.action] || r.action %></td>
+                <td data-label="بیمار"><% if (r.code) { %><a class="mono" href="/patients/<%= r.code %>"><%= r.code %></a><% } else { %>—<% } %></td>
+                <td data-label="جزئیات"><span class="mono"><%= r.detail || '—' %></span></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <div class="card-foot">
+          <span>نمایش <%= fa(from) %> تا <%= fa(to) %> از <%= fa(total) %> مورد</span>
+          <% if (pages > 1) { %>
+          <div class="pagination">
+            <a class="page-btn" href="<%= href(Math.max(1, page - 1)) %>"<%- page === 1 ? ' aria-disabled="true"' : '' %>>قبلی</a>
+            <span class="page-btn" aria-current="page"><%= faDigits(page) %> از <%= faDigits(pages) %></span>
+            <a class="page-btn" href="<%= href(Math.min(pages, page + 1)) %>"<%- page === pages ? ' aria-disabled="true"' : '' %>>بعدی</a>
+          </div>
+          <% } %>
+        </div>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>
