@@ -1,0 +1,183 @@
+<%
+const { STATUS, SEX } = labels;
+const fa = (n) => faDigits(Number(n).toLocaleString('en-US').replace(/,/g, '٬'));
+const initials = (p) => Array.from(p.first_name)[0] + Array.from(p.last_name)[0];
+// Every operator key with its Persian label. The server renders only the operators that fit the chosen field;
+// app.js refills the list when the field changes (the label table travels in data-labels).
+const opLabels = Object.assign({}, ...Object.values(OPERATORS));
+const opsFor = (r) => {
+  const f = Object.hasOwn(FIELDS, r.field || '') ? FIELDS[r.field] : null;
+  if (!f) return Object.keys(opLabels);
+  return r.op && !f.ops.includes(r.op) && Object.hasOwn(opLabels, r.op) ? [...f.ops, r.op] : f.ops; // old saved search
+};
+const statusNames = { '': 'همه', ...Object.fromEntries(STATUS_KEYS.map((k) => [k, STATUS[k].label])) };
+const pageHref = (n) => '/search?' + params + (n > 1 ? '&page=' + n : '');
+const rule = (i) => query.rules[i] || {};
+const sel = (cond) => (cond ? ' selected' : '');
+const savedHidden = () => query.rules.map((r, i) => ['f', 'o', 'v', 'w'].map((k) => {
+  const v = { f: r.field, o: r.op, v: r.value, w: r.value2 }[k];
+  return v ? '<input type="hidden" name="' + k + (i + 1) + '" value="' + String(v).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]) + '">' : '';
+}).join('')).join('') + '<input type="hidden" name="join" value="' + query.join + '">'
+  + (query.status ? '<input type="hidden" name="s" value="' + query.status + '">' : '');
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'جستجوی پیشرفته', pageCss: 'page-search-builder' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Advanced Search</span></div>
+          <h1>جستجوی پیشرفته</h1>
+          <p>شرط‌های چندگانه بسازید تا بیماران موردنظر را پیدا کنید. جستجوهای پرکاربرد را برای استفاده‌ی دوباره ذخیره کنید.</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" type="submit" form="qb-form">اجرای جستجو</button>
+        </div>
+      </div>
+
+      <div class="grid grid-main">
+        <div>
+          <form id="qb-form" method="get" action="/search">
+            <section class="qb-group" aria-labelledby="qb-h">
+              <h2 id="qb-h" class="mb-3">شرط‌ها</h2>
+              <% if (error) { %><div class="info-box" role="alert"><%= error %></div><% } %>
+
+              <div class="qb-bar">
+                <div class="qb-op join-opts" role="radiogroup" aria-label="ترکیب شرط‌ها">
+                  <label class="join-opt"><input type="radio" name="join" value="and"<%- query.join === 'and' ? ' checked' : '' %>>همه‌ی شرط‌ها</label>
+                  <label class="join-opt"><input type="radio" name="join" value="or"<%- query.join === 'or' ? ' checked' : '' %>>هر یک از شرط‌ها</label>
+                </div>
+                <label class="qb-status-wrap"><span class="text-sm-muted">وضعیت پرونده</span>
+                  <select class="select qb-status" name="s" data-status-cycle aria-label="وضعیت پرونده">
+                    <% Object.entries(statusNames).forEach(([k, label]) => { %><option value="<%= k %>"<%- sel((query.status || '') === k) %>><%= label %></option><% }) %>
+                  </select>
+                </label>
+              </div>
+              <p class="text-sm-muted">فقط ردیف‌هایی که فیلد و مقدار دارند در جستجو به‌کار می‌روند. با دکمه‌ی «وضعیت پرونده» نتیجه را به یک وضعیت محدود کنید.</p>
+
+              <% for (let i = 0; i < MAX_RULES; i++) { const n = i + 1; const r = rule(i); %>
+              <div class="qb-rule rule-flat">
+                <select class="select" name="f<%= n %>" aria-label="فیلد شرط <%= faDigits(n) %>" data-date-fields="<%= Object.keys(FIELDS).filter((k) => FIELDS[k].type === 'date').join(' ') %>">
+                  <option value="">انتخاب فیلد</option>
+                  <% Object.entries(FIELDS).filter(([key, f]) => !f.hidden || r.field === key).forEach(([key, f]) => { %><option value="<%= key %>" data-ops="<%= f.ops.join(' ') %>"<%- f.choices ? ' data-choices="' + JSON.stringify(f.choices).replace(/&/g, '&amp;').replace(/"/g, '&quot;') + '"' : '' %> data-type="<%= f.type %>"<%- sel(r.field === key) %>><%= f.label %></option><% }) %>
+                </select>
+                <select class="select" name="o<%= n %>" aria-label="عملگر شرط <%= faDigits(n) %>" data-labels="<%= JSON.stringify(opLabels) %>">
+                  <option value="">عملگر</option>
+                  <% opsFor(r).forEach((key) => { %><option value="<%= key %>"<%- sel(r.op === key) %>><%= opLabels[key] %></option><% }) %>
+                </select>
+                <input class="input" type="text" name="v<%= n %>" value="<%= r.value ?? '' %>" placeholder="مقدار" aria-label="مقدار شرط <%= faDigits(n) %>" dir="auto" maxlength="100" data-jalali="f<%= n %>">
+                <input class="input" type="text" name="w<%= n %>" value="<%= r.value2 ?? '' %>" placeholder="تا (برای «بین»)" aria-label="مقدار دوم شرط <%= faDigits(n) %>" dir="auto" maxlength="100" data-jalali="f<%= n %>">
+              </div>
+              <% } %>
+            </section>
+          </form>
+
+          <% if (results) { %>
+          <section class="card mt-6" aria-labelledby="res-h">
+            <div class="toolbar">
+              <span class="bold-text" id="res-h"><%= fa(results.total) %> بیمار یافت شد</span>
+              <% if (results.total > 0) { %>
+              <a class="btn btn-sm" href="/search/export.xlsx?<%= params %>"><svg class="icon"><use href="#i-download"/></svg>خروجی Excel</a>
+              <a class="btn btn-sm btn-ghost" href="/search/export.csv?<%= params %>">CSV</a>
+              <% } %>
+            </div>
+            <% if (results.rows.length === 0) { %>
+            <div class="card-body"><p class="muted">بیماری با این شرط‌ها پیدا نشد.</p></div>
+            <% } else { %>
+            <div class="table-wrap">
+              <table class="table">
+                <thead><tr><th scope="col">بیمار</th><th scope="col">کد بیمار</th><th scope="col">سن</th><th scope="col">آخرین به‌روزرسانی</th><th scope="col">وضعیت</th></tr></thead>
+                <tbody>
+                  <% results.rows.forEach((p) => { %>
+                  <tr>
+                    <td data-label="بیمار"><div class="person"><span class="avatar avatar-sm"><%= initials(p) %></span><a href="/patients/<%= p.code %>"><b><%= p.first_name %> <%= p.last_name %></b></a></div></td>
+                    <td data-label="کد بیمار" class="mono"><%= p.code %></td>
+                    <td data-label="سن" class="num"><%= p.age === null ? '—' : faDigits(p.age) %></td>
+                    <td data-label="آخرین به‌روزرسانی"><span class="text-sm"><%= formatJalali(localDay(p.updated_at), 'short') %></span></td>
+                    <td data-label="وضعیت"><span class="chip <%= STATUS[p.status].chip %> chip-plain"><%= STATUS[p.status].label %></span></td>
+                  </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+            <div class="card-foot">
+              <span class="text-sm-muted">نمایش <%= fa((results.page - 1) * results.pageSize + 1) %> تا <%= fa(Math.min(results.total, results.page * results.pageSize)) %> از <%= fa(results.total) %> نتیجه</span>
+              <% if (results.pages > 1) { %>
+              <nav class="pagination" aria-label="صفحه‌بندی نتایج">
+                <a class="page-btn" href="<%= pageHref(Math.max(1, results.page - 1)) %>"<%- results.page === 1 ? ' aria-disabled="true"' : '' %>>قبلی</a>
+                <span class="page-btn" aria-current="page"><%= faDigits(results.page) %> از <%= faDigits(results.pages) %></span>
+                <a class="page-btn" href="<%= pageHref(Math.min(results.pages, results.page + 1)) %>"<%- results.page === results.pages ? ' aria-disabled="true"' : '' %>>بعدی</a>
+              </nav>
+              <% } %>
+            </div>
+            <% } %>
+          </section>
+          <% } %>
+        </div>
+
+        <div class="stack-lg">
+          <section class="card" id="saved-h" aria-labelledby="saved-title">
+            <div class="card-head"><h2 id="saved-title">جستجوهای ذخیره‌شده</h2></div>
+            <form class="saved-form" method="post" action="/search/saved">
+              <%- savedHidden() %>
+              <% if (saveError) { %><div class="info-box" role="alert"><%= saveError %></div><% } %>
+              <div class="field">
+                <label for="save-name">نام جستجو</label>
+                <input class="input" id="save-name" name="name" type="text" maxlength="80" placeholder="مثلاً: بیماران بحرانی سالمند" required>
+              </div>
+              <button class="btn btn-block" type="submit">ذخیره‌ی جستجوی فعلی</button>
+            </form>
+            <% if (saved.length === 0) { %>
+            <div class="card-body"><p class="muted">هنوز جستجویی ذخیره نشده است.</p></div>
+            <% } else { %>
+            <ul class="list list-no-pad">
+              <% saved.forEach((s) => { %>
+              <li class="list-item-col">
+                <b class="text-sm"><%= s.name %></b>
+                <span class="text-xs-muted">ذخیره‌شده توسط <%= s.owner || 'کاربر حذف‌شده' %> · <%= formatJalali(localDay(s.created_at), 'short') %></span>
+                <div class="saved-actions">
+                  <a class="btn btn-sm" href="/search/saved/<%= s.id %>">اجرا</a>
+                  <form method="post" action="/search/saved/<%= s.id %>/delete">
+                    <button class="btn btn-sm btn-ghost" type="submit" aria-label="حذف جستجوی <%= s.name %>">حذف</button>
+                  </form>
+                </div>
+              </li>
+              <% }) %>
+            </ul>
+            <% } %>
+          </section>
+
+          <section class="card card-flat" aria-labelledby="tips-h">
+            <div class="card-head"><h2 id="tips-h">نکات</h2></div>
+            <ul class="list list-no-pad">
+              <li class="list-item-col">
+                <b class="text-sm">مقدارهای فهرستی</b>
+                <span class="text-xs-muted">برای جنسیت و گروه خونی بعد از انتخاب فیلد، دکمه‌های مقدار نشان داده می‌شود.</span>
+              </li>
+              <li class="list-item-col">
+                <b class="text-sm">سن و تاریخ</b>
+                <span class="text-xs-muted">برای سن از «کمتر از»، «بیشتر از» یا «بین» استفاده کنید. تاریخ را به شکل ۱۴۰۳/۰۵/۱۲ بنویسید.</span>
+              </li>
+              <li class="list-item-col">
+                <b class="text-sm">بایگانی‌شده‌ها</b>
+                <span class="text-xs-muted">در حالت «همه» نتایج شامل بیماران بایگانی‌شده هم می‌شود. دکمه‌ی «وضعیت پرونده» را بزنید تا بین همه، فعال، در انتظار، بحرانی و بایگانی‌شده بچرخد.</span>
+              </li>
+            </ul>
+          </section>
+
+          <% if (summary) { %>
+          <section class="card" aria-labelledby="sum-h">
+            <div class="card-head"><h2 id="sum-h">خلاصه‌ی جستجو</h2></div>
+            <div class="card-body"><div class="code-block"><%= summary %></div></div>
+          </section>
+          <% } %>
+        </div>
+      </div>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

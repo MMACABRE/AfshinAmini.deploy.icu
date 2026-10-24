@@ -1,0 +1,127 @@
+<%# Finance settings (D29): general settings, catalog, payment methods, clinic accounts. Locals: settings, catalog (with
+    used), methods (with used), accounts (with used), errors, notice, values. %>
+<%
+const curName = cur === 'R' ? 'ریال' : 'تومان';
+const sv = (k) => (values && values[k] != null ? values[k] : settings[k]);
+const err = (k) => errors[k] ? '<p class="field-error" role="alert">' + String(errors[k]).replace(/</g, '&lt;') + '</p>' : '';
+const attr = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'تنظیمات مالی', pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb"><a href="/finance">امور مالی</a> / تنظیمات</div><h1>تنظیمات و قیمت‌ها</h1>
+        <p>تغییر قیمت فقط روی ردیف‌های تازه اثر دارد؛ صورتحساب‌های قبلی با قیمت روز خودشان می‌مانند. موردی که به کار رفته حذف نمی‌شود و فقط غیرفعال می‌شود.</p></div></div>
+      <%- include('nav', { here: 'settings' }) %>
+      <% if (notice) { %><div class="callout callout-info" role="status"><svg class="icon"><use href="#i-check"/></svg><span><%= notice %></span></div><% } %>
+
+      <section class="card" aria-labelledby="gen-h">
+        <div class="card-head"><h2 id="gen-h">تنظیمات کلی</h2></div>
+        <form class="card-body form-grid" method="post" action="/finance/settings">
+          <fieldset class="field span-2 currency-field">
+            <legend class="label">واحد نمایش مبالغ در همه‌ی سامانه</legend>
+            <div class="levels">
+              <label class="level"><input type="radio" name="currency" value="T"<%- sv('currency') !== 'R' ? ' checked' : '' %>><span>تومان (T)</span></label>
+              <label class="level"><input type="radio" name="currency" value="R"<%- sv('currency') === 'R' ? ' checked' : '' %>><span>ریال (R)</span></label>
+            </div>
+            <span class="hint">مبالغ همیشه به ریال ذخیره می‌شوند؛ این گزینه فقط نمایش و ورود مبلغ را عوض می‌کند. نمونه: <span class="money"><%= formatMoney(12500000, sv('currency')) %></span></span>
+          </fieldset>
+          <div class="field"><label for="s-name">نام کلینیک (سربرگ فرم‌های چاپی)</label><input id="s-name" class="input" type="text" name="clinic_name" value="<%= sv('clinic_name') %>" maxlength="120" required><%- err('clinic_name') %></div>
+          <div class="field"><label for="s-phone">تلفن</label><input id="s-phone" class="input" type="text" name="clinic_phone" value="<%= sv('clinic_phone') %>" maxlength="60" dir="ltr"></div>
+          <div class="field span-2"><label for="s-addr">نشانی</label><input id="s-addr" class="input" type="text" name="clinic_address" value="<%= sv('clinic_address') %>" maxlength="300"></div>
+          <div class="field"><label for="s-warn">حد هشدار موجودی (پیش‌فرض)</label><input id="s-warn" class="input" type="text" name="low_warn" value="<%= sv('low_warn') %>" inputmode="decimal" dir="ltr"><%- err('low_warn') %></div>
+          <div class="field"><label for="s-crit">حد بحرانی موجودی (پیش‌فرض)</label><input id="s-crit" class="input" type="text" name="low_crit" value="<%= sv('low_crit') %>" inputmode="decimal" dir="ltr"><%- err('low_crit') %></div>
+          <div class="form-actions span-2"><button class="btn btn-primary" type="submit">ذخیره‌ی تنظیمات</button></div>
+        </form>
+      </section>
+
+      <section class="card mt-6" id="catalog" aria-labelledby="cat-h">
+        <div class="card-head"><div><h2 id="cat-h">فهرست قیمت‌ها</h2><p>خدمات (مثل ویزیت و عمل) و کالاهای انبار با قیمت فروش. مبالغ به <%= curName %>.</p></div></div>
+        <%- errors.catalog ? '<div class="card-body">' + err('catalog') + '</div>' : '' %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">نوع</th><th scope="col">نام و قیمت فروش</th><th scope="col"><span class="sr-only">حذف</span></th></tr></thead>
+            <tbody>
+              <% catalog.forEach((c) => { %>
+              <tr class="<%= c.active ? '' : 'row-mute' %>">
+                <td data-label="نوع"><span class="chip chip-plain <%= c.kind === 'item' ? 'chip-info' : 'chip-mute' %>"><%= c.kind === 'item' ? 'کالا' : 'خدمت' %></span><% if (c.fixed) { %> <span class="chip chip-plain chip-ok">ثابت</span><% } %></td>
+                <td data-label="نام و قیمت">
+                  <form class="inline-form" method="post" action="/finance/settings/catalog/<%= c.id %>">
+                    <label class="sr-only" for="cn-<%= c.id %>">نام</label><input id="cn-<%= c.id %>" class="input" type="text" name="name" value="<%= c.name %>" maxlength="120" required>
+                    <label class="sr-only" for="cp-<%= c.id %>">قیمت فروش</label><input id="cp-<%= c.id %>" class="input input-money" type="text" name="sale_price" value="<%= moneyInput(c.sale_price, cur) %>" inputmode="numeric" dir="ltr" required>
+                    <label class="check"><input type="checkbox" name="active" value="1"<%- c.active ? ' checked' : '' %>><span>فعال</span></label>
+                    <button class="btn btn-sm" type="submit">ذخیره</button>
+                    <% if (c.kind === 'item') { %><a class="btn btn-sm btn-ghost" href="/storage/items/<%= c.id %>">انبار</a><% } %>
+                  </form>
+                  <%- err('c' + c.id) %>
+                </td>
+                <td data-label="حذف"><% if (!c.used) { %><%- include('../partials/confirm-delete', { action: '/finance/settings/catalog/' + c.id + '/delete', question: '«' + c.name + '» از فهرست حذف شود؟' }) %><% } else { %><span class="text-xs-muted">به کار رفته</span><% } %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <form class="card-body form-grid form-grid-3 add-entry" method="post" action="/finance/settings/catalog">
+          <h3 class="span-all">افزودن به فهرست</h3>
+          <div class="field"><label for="ne-kind">نوع</label><select id="ne-kind" class="select" name="kind"><option value="service">خدمت</option><option value="item">کالای انبار</option></select></div>
+          <div class="field"><label for="ne-name">نام</label><input id="ne-name" class="input" type="text" name="name" maxlength="120" required></div>
+          <div class="field"><label for="ne-price">قیمت فروش (<%= curName %>)</label><input id="ne-price" class="input input-money" type="text" name="sale_price" inputmode="numeric" dir="ltr" required></div>
+          <div class="field"><label for="ne-cost">قیمت خرید (فقط کالا، اختیاری)</label><input id="ne-cost" class="input input-money" type="text" name="purchase_cost" inputmode="numeric" dir="ltr"></div>
+          <div class="form-actions span-all"><button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-plus"/></svg>افزودن</button></div>
+        </form>
+      </section>
+
+      <div class="grid grid-2 mt-6 lists-grid">
+        <section class="card" id="methods" aria-labelledby="met-h">
+          <div class="card-head"><div><h2 id="met-h">روش‌های پرداخت</h2><p>هر روش می‌تواند حساب پیش‌فرض داشته باشد.</p></div></div>
+          <%- errors.method ? '<div class="card-body">' + err('method') + '</div>' : '' %>
+          <ul class="edit-list">
+            <% methods.forEach((m) => { %>
+            <li class="<%= m.active ? '' : 'row-mute' %>">
+              <form class="inline-form" method="post" action="/finance/settings/methods/<%= m.id %>">
+                <label class="sr-only" for="mn-<%= m.id %>">نام روش</label><input id="mn-<%= m.id %>" class="input" type="text" name="name" value="<%= m.name %>" maxlength="80" required>
+                <label class="sr-only" for="ma-<%= m.id %>">حساب پیش‌فرض</label>
+                <select id="ma-<%= m.id %>" class="select select-sm" name="default_account"><option value="">بدون پیش‌فرض</option><% accounts.forEach((a) => { %><option value="<%= a.id %>"<%- a.id === m.default_account ? ' selected' : '' %>><%= a.name %></option><% }) %></select>
+                <label class="check"><input type="checkbox" name="active" value="1"<%- m.active ? ' checked' : '' %>><span>فعال</span></label>
+                <button class="btn btn-sm" type="submit">ذخیره</button>
+              </form>
+              <% if (!m.used) { %><%- include('../partials/confirm-delete', { action: '/finance/settings/methods/' + m.id + '/delete', question: 'روش «' + m.name + '» حذف شود؟' }) %><% } %>
+            </li>
+            <% }) %>
+          </ul>
+          <form class="card-body inline-form" method="post" action="/finance/settings/methods">
+            <label class="sr-only" for="nm">نام روش تازه</label><input id="nm" class="input" type="text" name="name" maxlength="80" placeholder="روش تازه، مثلاً «چک»" required>
+            <select class="select select-sm" name="default_account" aria-label="حساب پیش‌فرض"><option value="">بدون پیش‌فرض</option><% accounts.forEach((a) => { %><option value="<%= a.id %>"><%= a.name %></option><% }) %></select>
+            <button class="btn btn-sm btn-primary" type="submit">افزودن</button>
+          </form>
+        </section>
+
+        <section class="card" id="accounts" aria-labelledby="acc-h">
+          <div class="card-head"><div><h2 id="acc-h">حساب‌های کلینیک</h2><p>جایی که پول می‌رود: صندوق یا حساب بانکی.</p></div></div>
+          <%- errors.account ? '<div class="card-body">' + err('account') + '</div>' : '' %>
+          <ul class="edit-list">
+            <% accounts.forEach((a) => { %>
+            <li class="<%= a.active ? '' : 'row-mute' %>">
+              <form class="inline-form" method="post" action="/finance/settings/accounts/<%= a.id %>">
+                <label class="sr-only" for="an-<%= a.id %>">نام حساب</label><input id="an-<%= a.id %>" class="input" type="text" name="name" value="<%= a.name %>" maxlength="80" required>
+                <label class="check"><input type="checkbox" name="active" value="1"<%- a.active ? ' checked' : '' %>><span>فعال</span></label>
+                <button class="btn btn-sm" type="submit">ذخیره</button>
+              </form>
+              <% if (!a.used) { %><%- include('../partials/confirm-delete', { action: '/finance/settings/accounts/' + a.id + '/delete', question: 'حساب «' + a.name + '» حذف شود؟' }) %><% } %>
+            </li>
+            <% }) %>
+          </ul>
+          <form class="card-body inline-form" method="post" action="/finance/settings/accounts">
+            <label class="sr-only" for="na">نام حساب تازه</label><input id="na" class="input" type="text" name="name" maxlength="80" placeholder="حساب تازه، مثلاً «بانک ملت»" required>
+            <button class="btn btn-sm btn-primary" type="submit">افزودن</button>
+          </form>
+        </section>
+      </div>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

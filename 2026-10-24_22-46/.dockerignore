@@ -1,0 +1,10 @@
+node_modules
+data
+.env
+.git
+.claude
+test
+docs
+*.md
+Skills Note File.txt
+HANDOFF.md

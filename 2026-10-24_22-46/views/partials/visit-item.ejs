@@ -1,0 +1,39 @@
+<%# One visit row. Locals: v (row; with code/first_name/last_name when showPatient), showPatient, back (return path after an action),
+    archived (optional: the patient is archived, so the row offers no "plan again"; /visits rows carry v.patient_status instead).
+    Used by /visits and the patient profile timeline. %>
+<%
+const STATE = v.ongoing ? { label: 'در جریان', chip: 'chip-ok' } : v.overdue ? { label: 'زمان گذشته', chip: 'chip-warn' }
+  : ({ scheduled: { label: 'برنامه‌ریزی‌شده', chip: 'chip-info' }, done: { label: 'انجام‌شده', chip: 'chip-ok' }, cancelled: { label: 'لغو‌شده', chip: 'chip-mute' } })[v.status];
+%>
+<li class="visit visit-<%= v.status %><%= v.overdue ? ' visit-overdue' : '' %><%= v.ongoing ? ' visit-now' : '' %>">
+  <div class="visit-when">
+    <b class="mono"><%= faDigits(v.visit_time) %></b>
+    <span class="visit-until">تا <span class="mono"><%= faDigits(endTime(v.visit_time, v.duration_min)) %></span></span>
+    <span class="visit-dur"><%= faDigits(v.duration_min) %> دقیقه</span>
+    <span><%= formatJalali(v.visit_date, 'short') %></span>
+  </div>
+  <div class="visit-body">
+    <% if (showPatient) { %><a class="visit-patient" href="/patients/<%= v.code %>"><%= v.first_name %> <%= v.last_name %></a><% } %>
+    <span class="visit-reason"><%= v.reason || 'بدون شرح' %></span>
+    <% if (v.notes) { %><span class="visit-notes"><%= v.notes %></span><% } %>
+    <% if (smsOn && v.status === 'scheduled') { const r = smsReminder(v.id); if (r && r.status !== 'cancelled') { %>
+    <span class="chip chip-plain <%= ({ sent: 'chip-ok', pending: 'chip-info', sending: 'chip-info', failed: 'chip-warn', skipped: 'chip-mute' })[r.status] %>"><svg class="icon"><use href="#i-mail"/></svg><%= ({ sent: 'یادآوری ارسال شد', pending: 'یادآوری در انتظار (' + formatJalaliDateTime(r.due_at) + ')', sending: 'یادآوری در انتظار', failed: 'یادآوری ناموفق: ' + (r.reason || ''), skipped: 'یادآوری ارسال نمی‌شود: ' + (r.reason || '') })[r.status] %></span>
+    <% } } %>
+  </div>
+  <span class="chip <%= STATE.chip %>"><%= STATE.label %></span>
+  <div class="visit-actions">
+    <a class="btn btn-sm" href="/visits/<%= v.id %>"><svg class="icon"><use href="#i-file"/></svg><%= can('finance') ? 'شرح و صورتحساب' : 'شرح پزشک' %></a>
+  <% if (can('visits', 2)) { %>
+    <% if (v.status !== 'done') { %>
+    <form method="post" action="/visits/<%= v.id %>/status"><input type="hidden" name="back" value="<%= back %>"><input type="hidden" name="status" value="done"><button class="btn btn-sm" type="submit"><svg class="icon"><use href="#i-check"/></svg>انجام شد</button></form>
+    <% } %>
+    <% if (v.status === 'scheduled') { %>
+    <form method="post" action="/visits/<%= v.id %>/status"><input type="hidden" name="back" value="<%= back %>"><input type="hidden" name="status" value="cancelled"><button class="btn btn-sm btn-danger" type="submit">لغو</button></form>
+    <% } else if (!(locals.archived || v.patient_status === 'archived')) { %>
+    <form method="post" action="/visits/<%= v.id %>/status"><input type="hidden" name="back" value="<%= back %>"><input type="hidden" name="status" value="scheduled"><button class="btn btn-sm btn-ghost" type="submit">برنامه‌ریزی دوباره</button></form>
+    <% } %>
+    <a class="btn btn-sm btn-ghost" href="/visits/<%= v.id %>/edit?back=<%= encodeURIComponent(back) %>">ویرایش</a>
+    <%- include('confirm-delete', { action: '/visits/' + v.id + '/delete', question: 'این ویزیت حذف شود؟', back }) %>
+  <% } %>
+  </div>
+</li>
