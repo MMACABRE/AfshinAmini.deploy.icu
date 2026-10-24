@@ -1,0 +1,147 @@
+<%
+const { STATUS } = labels;
+const editing = !!patient;
+const title = editing ? 'ویرایش ' + patient.first_name + ' ' + patient.last_name : 'بیمار جدید';
+const action = editing ? '/patients/' + patient.code : '/patients';
+const v = (k) => (values && values[k] !== null && values[k] !== undefined ? values[k] : '');
+const err = (k) => errors[k];
+const hasErrors = Object.keys(errors).length > 0;
+// One text field. `opts`: type, dir, inputmode, placeholder, hint, required, maxlength.
+const field = (name, label, opts = {}) => {
+  const id = 'f-' + name;
+  let h = '<div class="field' + (opts.span ? ' span-2' : '') + '">';
+  h += '<label for="' + id + '">' + label + (opts.required ? ' <span class="muted">(الزامی)</span>' : '') + '</label>';
+  h += '<input class="input" type="' + (opts.type || 'text') + '" id="' + id + '" name="' + name + '" value="' + esc(v(name)) + '"';
+  if (opts.dir) h += ' dir="' + opts.dir + '"';
+  if (opts.inputmode) h += ' inputmode="' + opts.inputmode + '"';
+  if (opts.placeholder) h += ' placeholder="' + opts.placeholder + '"';
+  if (opts.maxlength) h += ' maxlength="' + opts.maxlength + '"';
+  if (opts.autocomplete) h += ' autocomplete="' + opts.autocomplete + '"';
+  if (opts.list) h += ' list="' + id + '-list" autocomplete="off"';
+  if (opts.jalali) h += ' data-jalali';
+  if (err(name)) h += ' aria-invalid="true" aria-describedby="' + id + '-err"';
+  h += '>';
+  // Native suggestion list: earlier values typed into this field, picked from a dropdown or typed fresh.
+  if (opts.list) h += '<datalist id="' + id + '-list">' + opts.list.map((o) => '<option value="' + esc(o) + '">').join('') + '</datalist>';
+  if (opts.hint && !err(name)) h += '<span class="hint">' + opts.hint + '</span>';
+  if (err(name)) h += '<p class="field-error" id="' + id + '-err" role="alert">' + esc(err(name)) + '</p>';
+  return h + '</div>';
+};
+const select = (name, label, options) => {
+  const id = 'f-' + name;
+  let h = '<div class="field"><label for="' + id + '">' + label + '</label>';
+  h += '<select class="select" id="' + id + '" name="' + name + '"' + (err(name) ? ' aria-invalid="true" aria-describedby="' + id + '-err"' : '') + '>';
+  options.forEach(([val, text]) => { h += '<option value="' + esc(val) + '"' + (String(v(name)) === val ? ' selected' : '') + '>' + text + '</option>'; });
+  h += '</select>';
+  if (err(name)) h += '<p class="field-error" id="' + id + '-err" role="alert">' + esc(err(name)) + '</p>';
+  return h + '</div>';
+};
+const area = (name, label, rows) => {
+  const id = 'f-' + name;
+  let h = '<div class="field span-2"><label for="' + id + '">' + label + '</label>';
+  h += '<textarea class="textarea" id="' + id + '" name="' + name + '" rows="' + rows + '"' + (err(name) ? ' aria-invalid="true" aria-describedby="' + id + '-err"' : '') + '>' + esc(v(name)) + '</textarea>';
+  if (err(name)) h += '<p class="field-error" id="' + id + '-err" role="alert">' + esc(err(name)) + '</p>';
+  return h + '</div>';
+};
+function esc(s) { return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]); }
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title, pageCss: 'page-patient-profile' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb">
+        <a href="/patients" lang="en">Patients</a> / <span lang="en"><%= editing ? 'Edit Patient' : 'New Patient' %></span>
+      </div>
+
+      <form class="card" method="post" action="<%= action %>" novalidate>
+        <div class="card-body form-section">
+          <h1><%= title %></h1>
+          <% if (hasErrors) { %><div class="info-box" role="alert">لطفاً خطاهای مشخص‌شده را برطرف کنید.</div><% } %>
+          <% if (editing) { %><p class="muted">کد بیمار: <span class="mono"><%= patient.code %></span><%= has('patient_code') ? ' (برای تغییر، فرم پایین صفحه)' : '' %></p><% } %>
+
+          <h2>هویت</h2>
+          <div class="form-grid">
+            <%- field('first_name', 'نام', { required: true, maxlength: 80, autocomplete: 'off' }) %>
+            <%- field('last_name', 'نام خانوادگی', { required: true, maxlength: 80, autocomplete: 'off' }) %>
+            <%- field('national_id', 'کد ملی', { dir: 'ltr', inputmode: 'numeric', maxlength: 10, hint: '۱۰ رقم' }) %>
+            <%- field('birth_date', 'تاریخ تولد', { dir: 'ltr', inputmode: 'numeric', placeholder: '۱۴۰۳/۰۵/۱۲', hint: 'تاریخ شمسی، مثل ۱۴۰۳/۰۵/۱۲', jalali: true }) %>
+            <%- select('sex', 'جنسیت', [['', 'مشخص نشده'], ['female', 'زن'], ['male', 'مرد']]) %>
+            <%- select('status', 'وضعیت', Object.entries(STATUS).map(([k, s]) => [k, s.label])) %>
+          </div>
+
+          <h2>مراجعه</h2>
+          <div class="form-grid">
+            <%- field('visit_reason', 'علت مراجعه', { span: true, maxlength: 1000, list: suggestions.visit_reason, hint: 'از فهرست انتخاب کنید یا متن تازه بنویسید' }) %>
+            <%- field('referral', 'معرف', { maxlength: 120, list: suggestions.referral, hint: 'از فهرست انتخاب کنید یا نام تازه بنویسید' }) %>
+          </div>
+
+          <h2>تماس و نشانی</h2>
+          <div class="form-grid">
+            <%- field('phone', 'تلفن همراه', { dir: 'ltr', inputmode: 'tel', maxlength: 20, autocomplete: 'off' }) %>
+            <%- field('email', 'ایمیل', { type: 'email', dir: 'ltr', maxlength: 120, autocomplete: 'off' }) %>
+            <%- field('city', 'شهر', { maxlength: 100 }) %>
+            <div class="field">
+              <input type="hidden" name="sms_optout_form" value="1">
+              <label class="check"><input type="checkbox" name="sms_optout" value="1"<%- Number(v('sms_optout')) === 1 ? ' checked' : '' %>><span>دریافت نکردن پیامک</span></label>
+              <span class="hint">اگر تیک بخورد، یادآوری و پیام گروهی برای این بیمار نمی‌رود.</span>
+            </div>
+            <%- area('address', 'نشانی', 3) %>
+          </div>
+
+          <h2>تماس اضطراری</h2>
+          <div class="form-grid">
+            <%- field('emergency_name', 'نام', { maxlength: 100 }) %>
+            <%- field('emergency_phone', 'تلفن', { dir: 'ltr', inputmode: 'tel', maxlength: 20 }) %>
+            <%- field('emergency_relation', 'نسبت', { maxlength: 60 }) %>
+          </div>
+
+          <h2>بیمه</h2>
+          <div class="form-grid">
+            <%- field('insurance_name', 'نوع بیمه', { maxlength: 100 }) %>
+            <%- field('insurance_number', 'شماره بیمه', { dir: 'ltr', maxlength: 60 }) %>
+          </div>
+
+          <h2>اطلاعات پزشکی</h2>
+          <div class="form-grid">
+            <%- select('blood_type', 'گروه خونی', [['', 'مشخص نشده'], ...['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((b) => [b, b])]) %>
+            <%- field('blood_pressure', 'فشار خون', { dir: 'ltr', placeholder: '120/80', maxlength: 20 }) %>
+            <%- field('height_cm', 'قد (سانتی‌متر)', { dir: 'ltr', inputmode: 'decimal' }) %>
+            <%- field('weight_kg', 'وزن (کیلوگرم)', { dir: 'ltr', inputmode: 'decimal' }) %>
+            <%- field('allergies', 'حساسیت‌ها', { span: true, hint: 'با ویرگول جدا کنید، مثل پنی‌سیلین، صدف' }) %>
+            <%- field('conditions', 'بیماری‌های زمینه‌ای', { span: true, hint: 'با ویرگول جدا کنید' }) %>
+            <%- area('medical_notes', 'یادداشت‌های بالینی', 5) %>
+          </div>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>ذخیره</button>
+            <a class="btn" href="<%= editing ? '/patients/' + patient.code : '/patients' %>">انصراف</a>
+          </div>
+        </div>
+      </form>
+
+      <% if (editing && has('patient_code')) {
+        const cv = locals.codeValues || {};
+        const ce = locals.codeError; %>
+      <form class="card mt-6" id="code" method="post" action="/patients/<%= patient.code %>/code" novalidate aria-labelledby="code-h">
+        <div class="card-body form-section">
+          <h2 id="code-h">تغییر کد بیمار</h2>
+          <p class="muted">کد فعلی <span class="mono"><%= patient.code %></span> است. با تغییر کد، پوشه‌ی پرونده روی سرور هم به نام تازه درمی‌آید و همه‌ی صفحه‌ها و خروجی‌ها کد تازه را نشان می‌دهند. کد قبلی آزاد می‌شود.</p>
+          <% if (ce) { %><div class="info-box" role="alert" id="code-err"><%= ce %></div><% } %>
+          <div class="form-grid">
+            <div class="field"><label for="f-new-code">کد تازه</label><input class="input mono" type="text" id="f-new-code" name="new_code" value="<%= cv.typed || '' %>" dir="ltr" placeholder="P-000123" maxlength="20" autocomplete="off" required<%- ce ? ' aria-invalid="true" aria-describedby="code-err"' : '' %>><span class="hint">مثل P-000123 یا فقط عدد آن</span></div>
+            <div class="field"><label for="f-new-code2">تکرار کد تازه</label><input class="input mono" type="text" id="f-new-code2" name="new_code2" value="<%= cv.again || '' %>" dir="ltr" placeholder="P-000123" maxlength="20" autocomplete="off" required></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>تغییر کد</button>
+          </div>
+        </div>
+      </form>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

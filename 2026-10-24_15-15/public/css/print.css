@@ -1,0 +1,139 @@
+/* PDF documents (D30, ticket #8): one frame for every document. "Not too maximalist, not too minimal, never a printed
+   spreadsheet": a thin sage border with small quarter-circle corners, a letterhead, a faint watermark, airy tables.
+   Always light colours (data-theme="light" on <html>). Logical properties only. */
+:root { --doc-ink: #22302a; --doc-soft: #5b6b63; --doc-line: #dfe7e1; --doc-tint: #eef4ef; --doc-sage: #376746; --doc-sage-2: #a5c4a5; }
+
+body.print-page { background: #e9eeea; color: var(--doc-ink); margin: 0; padding: 24px 16px 48px; }
+.print-bar { max-width: 210mm; margin: 0 auto 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.print-hint { font-size: 12px; color: var(--doc-soft); }
+button[data-print]:not([hidden]) ~ .print-hint { display: none; }
+
+.doc {
+  position: relative; box-sizing: border-box; margin: 0 auto; background: #fff; overflow: hidden;
+  width: 210mm; min-height: 297mm; padding: 16mm 15mm 20mm;
+  border-radius: 4px; box-shadow: 0 18px 40px -24px rgba(20, 40, 30, .45);
+  font: 400 12.5px/1.75 "Vazirmatn", system-ui, sans-serif;
+}
+.print-a5 .doc { width: 148mm; min-height: 210mm; padding: 12mm 11mm 16mm; font-size: 11.5px; }
+.print-a5 .print-bar { max-width: 148mm; }
+
+/* Frame: a thin inner rule and four quarter-circle ornaments in the corners. */
+.doc::before { content: ""; position: absolute; inset: 7mm; border: 1px solid var(--doc-sage-2); border-radius: 2px; pointer-events: none; }
+.print-a5 .doc::before { inset: 5mm; }
+.doc-corner { position: absolute; width: 12mm; height: 12mm; border: 1.5px solid var(--doc-sage); pointer-events: none; }
+.print-a5 .doc-corner { width: 9mm; height: 9mm; }
+.doc-corner-1 { inset-block-start: 5mm; inset-inline-start: 5mm; border-inline-end: 0; border-block-end: 0; border-start-start-radius: 12mm; }
+.doc-corner-2 { inset-block-start: 5mm; inset-inline-end: 5mm; border-inline-start: 0; border-block-end: 0; border-start-end-radius: 12mm; }
+.doc-corner-3 { inset-block-end: 5mm; inset-inline-start: 5mm; border-inline-end: 0; border-block-start: 0; border-end-start-radius: 12mm; }
+.doc-corner-4 { inset-block-end: 5mm; inset-inline-end: 5mm; border-inline-start: 0; border-block-start: 0; border-end-end-radius: 12mm; }
+.print-a5 .doc-corner-1, .print-a5 .doc-corner-2 { inset-block-start: 3.5mm; }
+.print-a5 .doc-corner-3, .print-a5 .doc-corner-4 { inset-block-end: 3.5mm; }
+.print-a5 .doc-corner-1, .print-a5 .doc-corner-3 { inset-inline-start: 3.5mm; }
+.print-a5 .doc-corner-2, .print-a5 .doc-corner-4 { inset-inline-end: 3.5mm; }
+
+.doc-watermark {
+  position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 0;
+  font: 800 64px/1 "Vazirmatn", sans-serif; color: var(--doc-sage); opacity: .05; rotate: -24deg; white-space: nowrap;
+}
+.doc > * { position: relative; z-index: 1; }
+.doc > .doc-corner, .doc > .doc-watermark { position: absolute; }
+
+.doc-letterhead { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; border-bottom: 2px solid var(--doc-sage); }
+.doc-mark { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; background: var(--doc-sage); color: #fff; flex: none; }
+.doc-mark .icon { width: 20px; height: 20px; }
+.doc-clinic { font: 700 18px/1.3 "Vazirmatn", sans-serif; color: var(--doc-sage); letter-spacing: -.01em; }
+.doc-contact { font-size: 11px; color: var(--doc-soft); }
+
+.doc-title { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 14px 0 12px; }
+.doc-title h1 { margin: 0; font: 700 17px/1.4 "Vazirmatn", sans-serif; color: var(--doc-ink); }
+.doc-params { display: flex; gap: 6px; flex-wrap: wrap; }
+.doc-params span { padding: 1px 10px; border-radius: 999px; background: var(--doc-tint); color: var(--doc-sage); font-size: 11px; font-weight: 600; }
+
+.doc h2 { font: 700 13px/1.4 "Vazirmatn", sans-serif; color: var(--doc-sage); margin: 16px 0 6px; }
+.doc p { margin: 4px 0; }
+.doc .muted { color: var(--doc-soft); }
+.doc .mono, .doc .money { font-family: "Geist Mono", ui-monospace, monospace; direction: ltr; unicode-bidi: isolate; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.doc-table { width: 100%; border-collapse: collapse; margin: 4px 0 8px; }
+.doc-table th { text-align: start; font-weight: 600; font-size: 11px; color: var(--doc-soft); background: var(--doc-tint); padding: 6px 8px; }
+.doc-table th:first-child { border-start-start-radius: 6px; border-end-start-radius: 6px; }
+.doc-table th:last-child { border-start-end-radius: 6px; border-end-end-radius: 6px; }
+.doc-table td { padding: 6px 8px; border-bottom: 1px solid var(--doc-line); vertical-align: top; }
+.doc-table .num { text-align: end; }
+.doc-table tr { break-inside: avoid; }
+.doc-table tfoot td { border-bottom: 0; border-top: 1.5px solid var(--doc-sage); font-weight: 700; padding-top: 8px; }
+.doc-table .sub { display: block; font-size: 10.5px; color: var(--doc-soft); }
+.doc-table .neg { color: #8a2f28; }
+
+.doc-totals { display: flex; gap: 10px; flex-wrap: wrap; justify-content: flex-end; margin-top: 12px; break-inside: avoid; }
+.doc-totals > div { min-width: 120px; padding: 8px 12px; border-radius: 8px; background: var(--doc-tint); }
+.doc-totals dt { font-size: 10.5px; color: var(--doc-soft); }
+.doc-totals dd { margin: 0; font: 600 14px/1.4 "Geist Mono", monospace; direction: ltr; unicode-bidi: isolate; text-align: end; }
+.doc-totals .is-main { background: var(--doc-sage); }
+.doc-totals .is-main dt, .doc-totals .is-main dd { color: #fff; }
+.doc-kv { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px 16px; margin: 6px 0; }
+.doc-kv > div { display: flex; gap: 6px; }
+.doc-kv b { color: var(--doc-soft); font-weight: 500; white-space: nowrap; }
+.doc-note { font-size: 11px; color: var(--doc-soft); border-inline-start: 3px solid var(--doc-sage-2); padding-inline-start: 8px; margin-top: 10px; }
+.doc-empty { padding: 24px; text-align: center; color: var(--doc-soft); border: 1px dashed var(--doc-line); border-radius: 8px; }
+/* Daily visit report (D38): one tbody per visit, kept on one page where it fits. */
+.report-visit { break-inside: avoid; }
+.report-visit .report-head td { background: var(--doc-tint); border-bottom: 0; padding-top: 8px; }
+/* A thick sage rule between two patients, so each visit reads as its own block. */
+.report-table .report-visit + .report-visit .report-head td { border-top: 3px solid var(--doc-sage); }
+.report-table .report-visit:not(:last-child) > tr:last-child td { border-bottom: 0; padding-bottom: 14px; }
+.report-n { display: inline-grid; place-items: center; min-width: 20px; height: 20px; margin-inline-end: 6px; border-radius: 999px; background: var(--doc-sage); color: #fff; font-size: 10.5px; font-weight: 700; }
+/* The visit hour, large enough to find at a glance. */
+.report-time { float: inline-end; display: inline-flex; align-items: baseline; gap: 6px; padding: 2px 10px; border-radius: 8px; background: #fff; border: 1.5px solid var(--doc-sage); color: var(--doc-sage); }
+.report-time .mono { font-size: 16px; font-weight: 700; }
+.report-time-label { font-size: 10.5px; font-weight: 600; }
+.report-time .report-count { font-size: 16px; font-weight: 700; } /* Persian digits: the body font, not Geist Mono */
+.report-kind { font-size: 10px; color: var(--doc-soft); border: 1px solid var(--doc-line); border-radius: 999px; padding: 0 6px; margin-inline-start: 4px; }
+/* Product (stock item) rows stand out from service rows: warm tint, a bar on the start edge and a filled chip. */
+.report-item td { background: #fbf3df; }
+.report-item td:first-child { border-inline-start: 3px solid #c9973a; }
+.report-item .report-kind { background: #c9973a; border-color: #c9973a; color: #fff; font-weight: 600; }
+.report-owed td { font-weight: 700; border-bottom-color: var(--doc-sage-2); }
+.report-pay td { color: var(--doc-soft); }
+.report-pay td:first-child { padding-inline-start: 20px; }
+.report-date { font-size: 10.5px; margin-inline-start: 4px; }
+.report-rest td { font-weight: 600; }
+.report-muted { color: var(--doc-soft); font-style: italic; }
+/* Stock on hand (D41): lot rows with their expiry state. */
+.stock-state { display: inline-block; padding: 0 8px; border-radius: 999px; font-size: 10.5px; font-weight: 600; background: var(--doc-tint); color: var(--doc-sage); }
+.stock-state.is-warn { background: #fbf3df; color: #8a6116; }
+.stock-state.is-crit, .stock-state.is-expired { background: #f6e1de; color: #8a2f28; }
+@media print { .report-head td, .report-n, .report-item td, .report-item .report-kind, .stock-state { print-color-adjust: exact; -webkit-print-color-adjust: exact; } }
+.doc-visit { break-inside: avoid; border-top: 1px solid var(--doc-line); padding-top: 8px; margin-top: 10px; }
+.doc-pre { white-space: pre-line; }
+.doc .nowrap { white-space: nowrap; }
+
+.doc-foot { position: absolute; inset-inline: 15mm; inset-block-end: 9mm; display: flex; justify-content: space-between; font-size: 10px; color: var(--doc-soft); }
+.print-a5 .doc-foot { inset-inline: 11mm; inset-block-end: 6.5mm; }
+
+/* Print index page inside the app shell. */
+.print-cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); }
+.print-cards .card-body form { display: flex; align-items: flex-end; gap: var(--sp-3); flex-wrap: wrap; }
+.print-cards .field { flex: 1 1 140px; }
+
+@media (max-width: 900px) {
+  body.print-page { padding: 12px 0 32px; }
+  .doc, .print-a5 .doc { width: 100%; min-height: 0; border-radius: 0; padding: 16px 16px 48px; }
+  .doc::before, .doc-corner { display: none; }
+  .doc-kv { grid-template-columns: minmax(0, 1fr); }
+  .doc-table { font-size: 11px; }
+  .print-bar { padding-inline: 16px; }
+  .print-cards { grid-template-columns: minmax(0, 1fr); }
+  .doc-foot { inset-inline: 16px; }
+}
+
+@page { size: A4; margin: 0; }
+@page a5 { size: A5; margin: 0; }
+@media print {
+  body.print-page { background: #fff; padding: 0; }
+  .print-bar, .sprite { display: none !important; }
+  .doc { box-shadow: none; border-radius: 0; margin: 0; width: auto; min-height: 100vh; }
+  .print-a5 .doc { page: a5; }
+  .doc-watermark, .doc-corner, .doc::before { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+  .doc-table th, .doc-totals > div, .doc-mark, .doc-params span { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+}

@@ -1,0 +1,66 @@
+<%# Record a payment from the Finance tab (D29): patient, then visit, then the same payment form as the visit page.
+    Locals: text, found, patient, visits (with number, bill), chosen, notice, methods, accounts, today. %>
+<%
+const money = (r) => '<span class="money">' + formatMoney(r, cur) + '</span>';
+const curName = cur === 'R' ? 'ریال' : 'تومان';
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ثبت پرداخت', pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb"><a href="/finance">امور مالی</a> / ثبت پرداخت</div><h1>ثبت پرداخت</h1><p>بیمار را پیدا کنید، ویزیت را انتخاب کنید و پرداخت را ثبت کنید. پیش‌پرداخت برای ویزیت‌های برنامه‌ریزی‌شده هم ممکن است.</p></div></div>
+      <%- include('nav', { here: 'pay' }) %>
+      <% if (notice) { %><div class="callout callout-info" role="status"><svg class="icon"><use href="#i-check"/></svg><span><%= notice %></span></div><% } %>
+
+      <% if (!patient) { %>
+      <section class="card">
+        <form class="card-body toolbar" method="get" action="/finance/pay" role="search">
+          <label class="sr-only" for="pay-q">جستجوی بیمار</label>
+          <input id="pay-q" class="input" type="search" name="q" value="<%= text %>" placeholder="نام، کد بیمار یا تلفن" autofocus>
+          <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-search"/></svg>جستجو</button>
+        </form>
+        <% if (text && !found.length) { %><div class="card-body"><p class="muted">بیماری پیدا نشد.</p></div><% } %>
+        <% if (found.length) { %>
+        <ul class="pick-list">
+          <% found.forEach((p) => { %><li><a href="/finance/pay?patient=<%= p.code %>"><b><%= p.first_name %> <%= p.last_name %></b><span class="mono"><%= p.code %></span><% if (p.phone) { %><span class="mono"><%= p.phone %></span><% } %></a></li><% }) %>
+        </ul>
+        <% } %>
+      </section>
+      <% } else { %>
+      <div class="pay-patient mb-4">
+        <b><a href="/patients/<%= patient.code %>"><%= patient.first_name %> <%= patient.last_name %></a></b> <span class="mono"><%= patient.code %></span>
+        <a class="btn btn-sm btn-ghost" href="/finance/pay">بیمار دیگر</a>
+      </div>
+      <% if (!visits.length) { %>
+      <section class="card"><div class="card-body"><p class="muted">این بیمار ویزیت پرداخت‌نشده یا برنامه‌ریزی‌شده‌ای ندارد. <% if (can('visits', 2)) { %><a href="/visits/new?patient=<%= patient.code %>">ثبت ویزیت تازه</a><% } %></p></div></section>
+      <% } %>
+      <% visits.forEach((v) => { %>
+      <section class="card pay-visit<%= v.id === chosen ? ' is-chosen' : '' %>" aria-labelledby="pv-<%= v.id %>">
+        <div class="card-head">
+          <div><h2 id="pv-<%= v.id %>"><a href="/visits/<%= v.id %>"><%= v.number ? 'ویزیت ' + faDigits(v.number) : 'ویزیت' %> — <%= formatJalali(v.visit_date) %></a></h2>
+            <p>قابل پرداخت <%- money(v.bill.owed) %> · پرداخت‌شده <%- money(v.bill.paid) %></p></div>
+          <% if (v.bill.credit) { %><span class="chip chip-info">بستانکار <%= formatMoney(v.bill.credit, cur) %></span><% } else if (v.bill.remaining) { %><span class="chip chip-warn">مانده <%= formatMoney(v.bill.remaining, cur) %></span><% } else { %><span class="chip chip-mute"><%= v.status === 'scheduled' ? 'پیش‌پرداخت' : 'تسویه' %></span><% } %>
+        </div>
+        <form class="card-body form-grid form-grid-3" method="post" action="/visits/<%= v.id %>/payments">
+          <input type="hidden" name="back" value="pay">
+          <div class="field"><label for="a-<%= v.id %>">مبلغ (<%= curName %>)</label><input id="a-<%= v.id %>" class="input input-money" type="text" name="amount" inputmode="numeric" dir="ltr" value="<%= moneyInput(v.bill.remaining || '', cur) %>" required></div>
+          <div class="field"><label for="d-<%= v.id %>">تاریخ</label><input id="d-<%= v.id %>" class="input" type="text" name="paid_on" inputmode="numeric" dir="ltr" data-jalali value="<%= today %>"></div>
+          <div class="field"><label for="m-<%= v.id %>">روش پرداخت</label><select id="m-<%= v.id %>" class="select" name="method_id" required><% methods.forEach((m) => { %><option value="<%= m.id %>"><%= m.name %></option><% }) %></select></div>
+          <div class="field"><label for="ac-<%= v.id %>">حساب</label><select id="ac-<%= v.id %>" class="select" name="account_id"><option value="">حساب پیش‌فرض روش پرداخت</option><% accounts.forEach((a) => { %><option value="<%= a.id %>"><%= a.name %></option><% }) %></select></div>
+          <div class="field span-2"><label for="n-<%= v.id %>">یادداشت (اختیاری)</label><input id="n-<%= v.id %>" class="input" type="text" name="note" maxlength="200"></div>
+          <div class="form-actions span-all">
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>ثبت پرداخت</button>
+            <% if (v.bill.remaining) { %><button class="btn" type="submit" name="full" value="1" formnovalidate>پرداخت کامل (<%= formatMoney(v.bill.remaining, cur) %>)</button><% } %>
+          </div>
+        </form>
+      </section>
+      <% }) %>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

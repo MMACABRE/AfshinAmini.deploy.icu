@@ -1,0 +1,7 @@
+<%# SMS sub-navigation. Locals: here ('log' | 'bulk' | 'settings'). %>
+<nav class="segmented sub-nav mb-4" aria-label="بخش‌های پیامک">
+  <% [['log', '/sms', 'گزارش ارسال', true], ['bulk', '/sms/bulk', 'ارسال گروهی', has('sms_bulk')], ['settings', '/sms/settings', 'تنظیمات', true]]
+     .filter((x) => x[3]).forEach(([k, href, label]) => { %>
+  <% if (k === here) { %><span class="is-on" aria-current="page"><%= label %></span><% } else { %><a href="<%= href %>"><%= label %></a><% } %>
+  <% }) %>
+</nav>

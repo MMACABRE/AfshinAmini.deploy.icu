@@ -1,0 +1,25 @@
+/* Admin pages: users, audit log, account. Small helpers on top of the shared components. */
+.mt-6 { margin-top: var(--sp-6); }
+.text-xs-subtle { font-size: var(--fs-xs); color: var(--text-3); }
+.text-sm { font-size: var(--fs-sm); }
+.mono { direction: ltr; unicode-bidi: isolate; }
+.link-secondary { font-size: var(--fs-sm); color: var(--accent-text); }
+/* deactivate and delete side by side in a user row */
+.user-actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.page-head + .callout, .page-head + .info-box, .callout + .info-box { margin-bottom: var(--sp-5); }
+
+/* Permission editor (D25): one card per area, level radios as a segmented control, flags as checkboxes. */
+.preset-bar { display: flex; align-items: flex-end; gap: var(--sp-4); flex-wrap: wrap; }
+.preset-bar .field { min-width: 200px; }
+.perm-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); }
+.perm-card { margin: 0; padding: 0; min-width: 0; }
+.levels { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--surface-2); border-radius: var(--radius-sm); }
+.level { flex: 1; min-width: 0; position: relative; }
+.level input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+.level span { display: block; text-align: center; padding: 8px 10px; border-radius: 6px; font-size: var(--fs-sm); font-weight: 500; color: var(--text-2); cursor: pointer; }
+.level input:checked + span { background: var(--raised); color: var(--accent-text); box-shadow: var(--shadow-sm); }
+.level input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+@media (max-width: 900px) {
+  .perm-grid { grid-template-columns: minmax(0, 1fr); }
+  .level span { padding-block: 12px; }
+}
