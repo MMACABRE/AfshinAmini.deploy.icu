@@ -1,0 +1,66 @@
+<%# Storage list (D26). Locals: items (with usable, next_expiry, low, expiry), filter, alertCount, settings. %>
+<%
+const LOW = { crit: ['chip-crit', 'موجودی بحرانی'], warn: ['chip-warn', 'موجودی کم'] };
+const EXP = { expired: ['chip-crit', 'منقضی شده'], crit: ['chip-crit', 'انقضای نزدیک'], warn: ['chip-warn', 'انقضا در ۳۰ روز'] };
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'انبار', pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Storage</span></div>
+          <h1>انبار</h1>
+          <p>موجودی کالاها به تعداد، با تاریخ انقضای هر بسته. مصرف همیشه از بسته‌ای برداشته می‌شود که زودتر منقضی می‌شود.</p>
+        </div>
+        <% if (has('finance_settings')) { %>
+        <a class="btn btn-primary" href="/storage/items/new"><svg class="icon"><use href="#i-plus"/></svg>کالای جدید</a>
+        <% } %>
+      </div>
+
+      <div class="segmented mb-4" role="group" aria-label="نمایش">
+        <% if (filter === 'all') { %><span class="is-on">همه‌ی کالاها</span><a href="/storage?f=alert">دارای هشدار (<%= faDigits(alertCount) %>)</a>
+        <% } else { %><a href="/storage">همه‌ی کالاها</a><span class="is-on">دارای هشدار (<%= faDigits(alertCount) %>)</span><% } %>
+      </div>
+
+      <section class="card">
+        <% if (!items.length) { %>
+        <div class="card-body empty-state">
+          <svg class="icon"><use href="#i-box"/></svg>
+          <p><%= filter === 'alert' ? 'هیچ کالایی هشدار ندارد.' : 'هنوز کالایی تعریف نشده است.' %></p>
+          <% if (filter === 'all' && has('finance_settings')) { %><a class="btn btn-primary" href="/storage/items/new">تعریف اولین کالا</a><% } %>
+        </div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">کالا</th><th scope="col">موجود قابل مصرف</th><th scope="col">نزدیک‌ترین انقضا</th><th scope="col">وضعیت</th><th scope="col">قیمت فروش</th></tr></thead>
+            <tbody>
+              <% items.forEach((it) => { %>
+              <tr>
+                <td data-label="کالا"><b><a href="/storage/items/<%= it.id %>"><%= it.name %></a></b></td>
+                <td data-label="موجود قابل مصرف"><span class="num-lg"><%= faDigits(it.usable) %></span> <span class="muted">عدد</span></td>
+                <td data-label="نزدیک‌ترین انقضا"><%= it.next_expiry ? formatJalali(it.next_expiry, 'short') : '—' %></td>
+                <td data-label="وضعیت">
+                  <div class="chips">
+                    <% if (it.low) { %><span class="chip <%= LOW[it.low][0] %>"><%= LOW[it.low][1] %></span><% } %>
+                    <% if (it.expiry) { %><span class="chip <%= EXP[it.expiry][0] %>"><%= EXP[it.expiry][1] %></span><% } %>
+                    <% if (!it.low && !it.expiry) { %><span class="chip chip-ok">عادی</span><% } %>
+                  </div>
+                </td>
+                <td data-label="قیمت فروش"><span class="money"><%= formatMoney(it.sale_price, cur) %></span></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+      </section>
+      <p class="text-xs-muted mt-3">حد پیش‌فرض هشدار: <%= faDigits(settings.low_warn) %> عدد، حد بحرانی: <%= faDigits(settings.low_crit) %> عدد. هشدار انقضا از ۳۰ روز مانده (زرد) و ۱۰ روز مانده (قرمز).</p>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

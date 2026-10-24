@@ -1,0 +1,320 @@
+<%
+const { STATUS, SEX, CATEGORY } = labels;
+const full = patient.first_name + ' ' + patient.last_name;
+const initials = Array.from(patient.first_name)[0] + Array.from(patient.last_name)[0];
+const chips = (s) => (s ? s.split(',').map((x) => x.trim()).filter(Boolean) : []);
+const allergies = chips(patient.allergies);
+const conditions = chips(patient.conditions);
+const bmi = patient.height_cm && patient.weight_kg ? patient.weight_kg / ((patient.height_cm / 100) ** 2) : null;
+const dash = '—';
+const jdate = (iso) => (iso ? formatJalali(iso, 'short') : dash);
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: full, pageCss: 'page-patient-profile' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb">
+        <a href="/patients" lang="en">Patients</a> / <%= full %>
+      </div>
+
+      <section class="card">
+        <div class="patient-head">
+          <div class="photo-box">
+            <% if (hasPhoto && can('documents')) { %>
+            <img class="avatar avatar-lg avatar-photo" src="/patients/<%= patient.code %>/photo" alt="عکس <%= full %>" width="96" height="96">
+            <% } else { %>
+            <span class="avatar avatar-lg avatar-warm"><%= initials %></span>
+            <% } %>
+            <% if (can('documents', 2)) { %>
+            <form class="photo-form" method="post" action="/patients/<%= patient.code %>/photo" enctype="multipart/form-data">
+              <label class="btn btn-sm" for="photo-file"><svg class="icon"><use href="#i-upload"/></svg><%= hasPhoto ? 'تغییر عکس' : 'افزودن عکس' %></label>
+              <input class="photo-input" id="photo-file" type="file" name="file" accept=".jpg,.jpeg,.png,image/jpeg,image/png" required data-autosubmit>
+              <button class="btn btn-sm btn-primary photo-save" type="submit">ذخیره‌ی عکس</button>
+            </form>
+            <% if (hasPhoto) { %>
+            <form method="post" action="/patients/<%= patient.code %>/photo/remove"><button class="btn btn-sm btn-ghost" type="submit">برداشتن عکس</button></form>
+            <% } %>
+            <% } %>
+            <% if (photoError) { %><p class="field-error" role="alert"><%= photoError %></p><% } %>
+          </div>
+          <div class="grow">
+            <h1><%= full %></h1>
+            <div class="meta">
+              <span><b>کد بیمار:</b> <span class="mono"><%= patient.code %></span></span>
+              <span><b>تاریخ تولد:</b> <%= jdate(patient.birth_date) %></span>
+              <span><b>تاریخ ثبت پرونده:</b> <%= jdate(localDay(patient.created_at)) %></span>
+              <% if (age !== null) { %><span><b>سن:</b> <%= faDigits(age) %> سال</span><% } %>
+              <% if (patient.sex) { %><span><b>جنسیت:</b> <%= SEX[patient.sex] %></span><% } %>
+              <% if (patient.phone) { %><span><b>تلفن:</b> <span class="mono"><%= patient.phone %></span></span><% } %>
+              <% if (lastSms) { %><span><b>پیامک:</b> <%= lastSms.kindText %> <span class="chip chip-sm <%= lastSms.chip %>"><%= lastSms.statusText %></span></span><% } %>
+            </div>
+            <div class="chips">
+              <span class="chip <%= STATUS[patient.status].chip %>"><%= STATUS[patient.status].label %></span>
+              <% if (patient.sms_optout) { %><span class="chip chip-mute">بدون پیامک</span><% } %>
+              <% allergies.forEach((a) => { %><span class="chip chip-crit">حساسیت: <%= a %></span><% }) %>
+            </div>
+          </div>
+          <div class="patient-actions">
+            <% if (can('documents', 2)) { %>
+            <a class="btn btn-sm btn-primary" href="#docs"><svg class="icon"><use href="#i-upload"/></svg>بارگذاری سند و تصویر</a>
+            <% } %>
+            <% if (can('patients', 2)) { %>
+            <a class="btn btn-sm" href="/patients/<%= patient.code %>/edit">ویرایش</a>
+            <% if (patient.status === 'archived') { %>
+            <form method="post" action="/patients/<%= patient.code %>/unarchive"><button class="btn btn-sm" type="submit">خروج از بایگانی</button></form>
+            <% } else { %>
+            <form method="post" action="/patients/<%= patient.code %>/archive"><button class="btn btn-sm" type="submit">بایگانی</button></form>
+            <% } %>
+            <% } %>
+            <% if (can('sms', 2) && can('patients')) { %>
+            <a class="btn btn-sm" href="/patients/<%= patient.code %>/sms"><svg class="icon"><use href="#i-mail"/></svg>ارسال پیامک</a>
+            <% } %>
+            <% if (has('patient_delete')) { %>
+            <a class="btn btn-sm btn-danger" href="/patients/<%= patient.code %>/delete">حذف</a>
+            <% } %>
+          </div>
+        </div>
+
+        <% if (balance) { %>
+        <div class="balance-strip">
+          <% if (balance.credit) { %><span class="chip chip-info">بستانکار <span class="money"><%= formatMoney(balance.credit, cur) %></span></span>
+          <% } else if (balance.remaining) { %><span class="chip chip-warn">مانده <span class="money"><%= formatMoney(balance.remaining, cur) %></span></span>
+          <% } else { %><span class="chip chip-ok">بدون بدهی</span><% } %>
+          <% if (patient.disc_kind) { %><span class="chip chip-plain chip-mute">تخفیف دائمی <%= describeDiscount(patient.disc_kind, patient.disc_value, cur) %></span><% } %>
+          <a class="btn btn-sm btn-ghost" href="/patients/<%= patient.code %>/history"><svg class="icon"><use href="#i-wallet"/></svg>سوابق درمان و مالی</a>
+          <% if (can('pdf')) { %><a class="btn btn-sm btn-ghost" href="/print/patients/<%= patient.code %>"><svg class="icon"><use href="#i-print"/></svg>چاپ پرونده</a><% } %>
+        </div>
+        <% } else if (can('pdf')) { %>
+        <div class="balance-strip"><a class="btn btn-sm btn-ghost" href="/print/patients/<%= patient.code %>"><svg class="icon"><use href="#i-print"/></svg>چاپ پرونده</a></div>
+        <% } %>
+
+        <!-- Tabs: CSS radio hack -->
+        <div class="tabs">
+          <input type="radio" id="tab-1" name="ptab"<%- medError ? '' : ' checked' %>>
+          <input type="radio" id="tab-2" name="ptab"<%- medError ? ' checked' : '' %>>
+
+          <div class="tab-list">
+            <label for="tab-1">شخصی</label>
+            <label for="tab-2">پزشکی</label>
+          </div>
+
+          <div class="tab-panels">
+            <div class="tab-panel panel-1">
+              <div class="grid grid-2">
+                <section>
+                  <h2 class="mb-4">هویت</h2>
+                  <dl class="kv">
+                    <dt>نام کامل</dt><dd><%= full %></dd>
+                    <dt>تاریخ تولد</dt><dd><%= jdate(patient.birth_date) %></dd>
+                    <dt>جنسیت</dt><dd><%= SEX[patient.sex] || dash %></dd>
+                    <dt>تاریخ ثبت پرونده</dt><dd><%= jdate(localDay(patient.created_at)) %></dd>
+                    <dt>کد ملی</dt><dd><% if (patient.national_id) { %><span class="mono"><%= patient.national_id %></span><% } else { %><%= dash %><% } %></dd>
+                  </dl>
+                </section>
+
+                <section>
+                  <h2 class="mb-4">تماس</h2>
+                  <dl class="kv">
+                    <dt>تلفن همراه</dt><dd><% if (patient.phone) { %><span class="mono"><%= patient.phone %></span><% } else { %><%= dash %><% } %></dd>
+                    <dt>ایمیل</dt><dd><% if (patient.email) { %><span class="mono"><%= patient.email %></span><% } else { %><%= dash %><% } %></dd>
+                  </dl>
+                </section>
+
+                <section>
+                  <h2 class="mb-4">نشانی</h2>
+                  <dl class="kv">
+                    <dt>شهر</dt><dd><%= patient.city || dash %></dd>
+                    <dt>نشانی</dt><dd><%= patient.address || dash %></dd>
+                  </dl>
+                </section>
+
+                <section>
+                  <h2 class="mb-4">تماس اضطراری</h2>
+                  <dl class="kv">
+                    <dt>نام</dt><dd><%= patient.emergency_name || dash %></dd>
+                    <dt>تلفن</dt><dd><% if (patient.emergency_phone) { %><span class="mono"><%= patient.emergency_phone %></span><% } else { %><%= dash %><% } %></dd>
+                    <dt>نسبت</dt><dd><%= patient.emergency_relation || dash %></dd>
+                  </dl>
+                </section>
+
+                <section class="span-2">
+                  <h2 class="mb-4">مراجعه</h2>
+                  <dl class="kv">
+                    <dt>علت مراجعه</dt><dd><%= patient.visit_reason || dash %></dd>
+                    <dt>معرف</dt><dd><%= patient.referral || dash %></dd>
+                  </dl>
+                </section>
+
+                <section class="span-2">
+                  <h2 class="mb-4">بیمه</h2>
+                  <dl class="kv">
+                    <dt>نوع بیمه</dt><dd><%= patient.insurance_name || dash %></dd>
+                    <dt>شماره بیمه</dt><dd><% if (patient.insurance_number) { %><span class="mono"><%= patient.insurance_number %></span><% } else { %><%= dash %><% } %></dd>
+                  </dl>
+                </section>
+              </div>
+            </div>
+
+            <div class="tab-panel panel-2">
+              <div class="grid grid-2">
+                <section>
+                  <h2 class="mb-4">حساسیت‌ها</h2>
+                  <div class="chips">
+                    <% allergies.forEach((a) => { %><span class="chip chip-crit"><%= a %></span><% }) %>
+                    <% if (!allergies.length) { %><span class="muted">ثبت نشده</span><% } %>
+                  </div>
+                </section>
+
+                <section>
+                  <h2 class="mb-4">بیماری‌های زمینه‌ای</h2>
+                  <div class="chips">
+                    <% conditions.forEach((c) => { %><span class="chip chip-outline"><%= c %></span><% }) %>
+                    <% if (!conditions.length) { %><span class="muted">ثبت نشده</span><% } %>
+                  </div>
+                </section>
+
+                <section class="span-2">
+                  <h2 class="mb-4">داروهای مصرفی</h2>
+                  <% if (medications.length) { %>
+                  <div class="table-wrap table-card">
+                    <table class="table mb-0">
+                      <thead><tr><th scope="col">دارو</th><th scope="col">دوز</th><th scope="col">تواتر مصرف</th><% if (can('patients', 2)) { %><th scope="col"><span class="sr-only">حذف</span></th><% } %></tr></thead>
+                      <tbody>
+                        <% medications.forEach((m) => { %>
+                        <tr>
+                          <td data-label="دارو"><%= m.name %></td>
+                          <td data-label="دوز"><%= m.dosage || dash %></td>
+                          <td data-label="تواتر مصرف"><%= m.frequency || dash %></td>
+                          <% if (can('patients', 2)) { %><td><form method="post" action="/patients/<%= patient.code %>/medications/<%= m.id %>/delete"><button class="btn btn-sm" type="submit">حذف</button></form></td><% } %>
+                        </tr>
+                        <% }) %>
+                      </tbody>
+                    </table>
+                  </div>
+                  <% } else { %><p class="muted">دارویی ثبت نشده است.</p><% } %>
+
+                  <% if (can('patients', 2)) { %>
+                  <form class="toolbar toolbar-gap" method="post" action="/patients/<%= patient.code %>/medications">
+                    <input class="input" type="text" name="name" placeholder="نام دارو" aria-label="نام دارو" maxlength="100" required>
+                    <input class="input" type="text" name="dosage" placeholder="دوز" aria-label="دوز" maxlength="60">
+                    <input class="input" type="text" name="frequency" placeholder="تواتر مصرف" aria-label="تواتر مصرف" maxlength="60">
+                    <button class="btn" type="submit"><svg class="icon"><use href="#i-plus"/></svg>افزودن دارو</button>
+                  </form>
+                  <% } %>
+                  <% if (medError) { %><p class="field-error" role="alert"><%= medError %></p><% } %>
+                </section>
+
+                <section class="span-2">
+                  <h2 class="mb-4">علائم و اندازه‌گیری‌ها</h2>
+                  <div class="grid grid-4">
+                    <article class="card stat">
+                      <div class="stat-label">فشار خون</div>
+                      <div class="stat-value text-xl"><% if (patient.blood_pressure) { %><span class="mono"><%= patient.blood_pressure %></span><% } else { %><%= dash %><% } %></div>
+                    </article>
+                    <article class="card stat">
+                      <div class="stat-label">قد</div>
+                      <div class="stat-value text-xl"><%= patient.height_cm ? faDigits(patient.height_cm) + ' سانتی‌متر' : dash %></div>
+                    </article>
+                    <article class="card stat">
+                      <div class="stat-label">وزن</div>
+                      <div class="stat-value text-xl"><%= patient.weight_kg ? faDigits(patient.weight_kg) + ' کیلوگرم' : dash %></div>
+                    </article>
+                    <article class="card stat">
+                      <div class="stat-label">شاخص توده‌ی بدنی</div>
+                      <div class="stat-value text-xl"><%= bmi ? faDigits(bmi.toFixed(1)).replace('.', '٫') : dash %></div>
+                    </article>
+                  </div>
+                  <% if (patient.blood_type) { %><p class="muted">گروه خونی: <span class="mono"><%= patient.blood_type %></span></p><% } %>
+                </section>
+
+                <section class="span-2">
+                  <h2 class="mb-4">یادداشت‌های بالینی</h2>
+                  <div class="notes-box"><%= patient.medical_notes || 'یادداشتی ثبت نشده است.' %></div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <% if (can('visits')) { %>
+      <section class="card visits-section" id="visits" aria-labelledby="visits-h">
+        <div class="card-head">
+          <div><h2 id="visits-h">ویزیت‌ها</h2>
+            <p><% if (visits.next) { %>ویزیت بعدی: <b><%= formatJalali(visits.next.visit_date) %></b> ساعت <b class="mono"><%= faDigits(visits.next.visit_time) %></b><% } else { %>ویزیت برنامه‌ریزی‌شده‌ای ندارد<% } %></p></div>
+          <% if (patient.status === 'archived') { %>
+          <span class="text-xs-muted">پرونده بایگانی‌شده است؛ ویزیت تازه ثبت نمی‌شود.</span>
+          <% } else if (can('visits', 2)) { %>
+          <a class="btn btn-sm btn-primary" href="/visits/new?patient=<%= patient.code %>"><svg class="icon"><use href="#i-plus"/></svg>ویزیت جدید</a>
+          <% } %>
+        </div>
+        <% if (visits.upcoming.length + visits.rest.length === 0) { %>
+        <div class="card-body"><p class="muted">هنوز ویزیتی ثبت نشده است. ویزیت‌های گذشته و بعدی بیمار اینجا روی یک خط زمان دیده می‌شوند.</p></div>
+        <% } else { %>
+        <% if (visits.next) { const dp = dayParts(visits.next.visit_date); %>
+        <div class="visit-next">
+          <div class="visit-next-date"><small><%= dp.weekday %></small><b><%= dp.day %></b><span><%= dp.month %></span></div>
+          <div class="visit-next-body">
+            <span class="eyebrow">ویزیت بعدی</span>
+            <b class="mono visit-next-time"><%= faDigits(visits.next.visit_time) %> <small>تا <%= faDigits(endTime(visits.next.visit_time, visits.next.duration_min)) %></small></b>
+            <span><%= visits.next.reason || 'بدون شرح' %></span>
+          </div>
+        </div>
+        <% } %>
+        <ol class="visit-list visit-timeline rail">
+          <% visits.upcoming.concat(visits.rest).forEach((v) => { %><%- include('../partials/visit-item', { v, showPatient: false, back: '/patients/' + patient.code + '#visits', archived: patient.status === 'archived' }) %><% }) %>
+        </ol>
+        <% } %>
+      </section>
+      <% } %>
+
+      <% if (can('documents')) { %>
+      <section class="card docs-section" id="docs" aria-labelledby="docs-h">
+        <div class="card-head">
+          <div><h2 id="docs-h">مدارک پزشکی</h2><p><%= faDigits(files.length) %> فایل</p></div>
+          <a class="btn btn-sm btn-ghost" href="/patients/<%= patient.code %>/documents">جستجو و طبقه‌بندی اسناد</a>
+        </div>
+        <% if (can('documents', 2)) { %>
+        <form class="card-body upload-form upload-form-compact" method="post" action="/patients/<%= patient.code %>/documents" enctype="multipart/form-data">
+          <input type="hidden" name="back" value="profile">
+          <%- include('../partials/dropzone', { id: 'pf-file' }) %>
+          <div class="upload-fields">
+            <div class="field">
+              <label for="pf-category">طبقه‌بندی</label>
+              <select id="pf-category" class="select" name="category">
+                <% Object.entries(CATEGORY).forEach(([k, l]) => { %><option value="<%= k %>"<%- k === 'other' ? ' selected' : '' %>><%= l %></option><% }) %>
+              </select>
+            </div>
+            <div class="field">
+              <label for="pf-date">تاریخ سند</label>
+              <input id="pf-date" class="input" type="text" name="doc_date" placeholder="۱۴۰۳/۰۵/۱۲" inputmode="numeric" dir="ltr" data-jalali>
+            </div>
+            <div class="field span-2">
+              <label for="pf-title">عنوان</label>
+              <input id="pf-title" class="input" type="text" name="title" maxlength="200" placeholder="مثلاً: عکس رادیولوژی قفسه‌ی سینه">
+            </div>
+            <div class="form-actions span-2">
+              <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-upload"/></svg>بارگذاری</button>
+            </div>
+          </div>
+        </form>
+        <% } %>
+        <% if (files.length) { %>
+        <div class="doc-gallery card-body">
+          <% files.forEach((d) => { %>
+          <%- include('../partials/doc-tile', { d, code: patient.code, back: '', classify: false }) %>
+          <% }) %>
+        </div>
+        <% } else { %>
+        <div class="card-body"><p class="muted">هنوز مدرکی بارگذاری نشده است.</p></div>
+        <% } %>
+      </section>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

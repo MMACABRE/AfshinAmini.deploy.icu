@@ -1,0 +1,67 @@
+<%# Payments list (D29). Locals: rows, sum, page, pages, filters, methods, accounts. %>
+<%
+const KIND = { payment: 'پرداخت', refund: 'بازپرداخت', move_out: 'انتقال (خروج)', move_in: 'انتقال (ورود)' };
+const money = (r) => '<span class="money">' + formatMoney(r, cur) + '</span>';
+const href = (p) => {
+  const q = new URLSearchParams({ from: filters.from, to: filters.to });
+  if (filters.method) q.set('method', filters.method);
+  if (filters.account) q.set('account', filters.account);
+  if (filters.kind) q.set('kind', filters.kind);
+  if (p > 1) q.set('page', p);
+  return '/finance/payments?' + q.toString();
+};
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'پرداخت‌ها', pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb"><a href="/finance">امور مالی</a> / پرداخت‌ها</div><h1>پرداخت‌ها</h1></div></div>
+      <%- include('nav', { here: 'payments' }) %>
+
+      <section class="card">
+        <form class="card-body filter-bar" method="get" action="/finance/payments">
+          <div class="field"><label for="f-from">از تاریخ</label><input id="f-from" class="input" type="text" name="from" value="<%= filters.from %>" inputmode="numeric" dir="ltr" data-jalali></div>
+          <div class="field"><label for="f-to">تا تاریخ</label><input id="f-to" class="input" type="text" name="to" value="<%= filters.to %>" inputmode="numeric" dir="ltr" data-jalali></div>
+          <div class="field"><label for="f-method">روش</label><select id="f-method" class="select" name="method"><option value="">همه</option><% methods.forEach((m) => { %><option value="<%= m.id %>"<%- filters.method === m.id ? ' selected' : '' %>><%= m.name %></option><% }) %></select></div>
+          <div class="field"><label for="f-account">حساب</label><select id="f-account" class="select" name="account"><option value="">همه</option><% accounts.forEach((a) => { %><option value="<%= a.id %>"<%- filters.account === a.id ? ' selected' : '' %>><%= a.name %></option><% }) %></select></div>
+          <div class="field"><label for="f-kind">نوع</label><select id="f-kind" class="select" name="kind"><option value="">همه</option><% Object.entries(KIND).forEach(([k, l]) => { %><option value="<%= k %>"<%- filters.kind === k ? ' selected' : '' %>><%= l %></option><% }) %></select></div>
+          <div class="field filter-go"><button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-filter"/></svg>نمایش</button></div>
+        </form>
+        <div class="card-foot"><span><%= faDigits(sum.n) %> ردیف · جمع <%- money(sum.total) %> · درآمد (پرداخت منهای بازپرداخت) <%- money(sum.income) %></span></div>
+        <% if (!rows.length) { %>
+        <div class="card-body"><p class="muted">در این بازه پرداختی نیست.</p></div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">تاریخ</th><th scope="col">بیمار</th><th scope="col">ویزیت</th><th scope="col">نوع</th><th scope="col">مبلغ</th><th scope="col">روش</th><th scope="col">حساب</th></tr></thead>
+            <tbody>
+              <% rows.forEach((r) => { %>
+              <tr>
+                <td data-label="تاریخ"><%= formatJalali(r.paid_on, 'short') %></td>
+                <td data-label="بیمار"><a href="/patients/<%= r.code %>"><%= r.first_name %> <%= r.last_name %></a> <span class="mono text-xs-muted"><%= r.code %></span></td>
+                <td data-label="ویزیت"><a href="/visits/<%= r.visit_id %>"><%= formatJalali(r.visit_date, 'short') %></a><% if (r.kind === 'payment' && r.paid_on < r.visit_date) { %> <span class="chip chip-info chip-plain">پیش‌پرداخت</span><% } %></td>
+                <td data-label="نوع"><%= KIND[r.kind] %></td>
+                <td data-label="مبلغ"><b class="<%= r.amount < 0 ? 'qty-out' : '' %>"><%- money(r.amount) %></b></td>
+                <td data-label="روش"><%= r.method || '—' %></td>
+                <td data-label="حساب"><%= r.account || '—' %></td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% if (pages > 1) { %>
+        <div class="card-foot"><span>صفحه‌ی <%= faDigits(page) %> از <%= faDigits(pages) %></span><div class="user-actions">
+          <% if (page > 1) { %><a class="btn btn-sm" href="<%= href(page - 1) %>">قبلی</a><% } %>
+          <% if (page < pages) { %><a class="btn btn-sm" href="<%= href(page + 1) %>">بعدی</a><% } %>
+        </div></div>
+        <% } %>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

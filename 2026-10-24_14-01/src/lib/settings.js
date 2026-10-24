@@ -1,0 +1,27 @@
+// Site-wide settings (finance settings page): display currency, alert defaults, letterhead. Key/value table.
+import { DEFAULT_TEMPLATE } from './sms-rules.js';
+
+export const DEFAULTS = {
+  currency: 'T', low_warn: '10', low_crit: '5', clinic_name: 'کلینیک', clinic_address: '', clinic_phone: '',
+  sms_enabled: '0', sms_line: '90008361', sms_lead: 'd1', sms_hour: '17', sms_template: DEFAULT_TEMPLATE,
+  sms_alert_phone: '', sms_low_threshold: '10', sms_low_alerted: '0', sms_balance: '', sms_balance_at: '',
+};
+
+export function getSettings(db) {
+  const rows = db.prepare('SELECT key, value FROM settings').all();
+  const s = { ...DEFAULTS, ...Object.fromEntries(rows.map((r) => [r.key, r.value])) };
+  return {
+    ...s,
+    currency: s.currency === 'R' ? 'R' : 'T',
+    low_warn: Math.max(0, Number.parseInt(s.low_warn, 10) || 0),
+    low_crit: Math.max(0, Number.parseInt(s.low_crit, 10) || 0),
+  };
+}
+
+export function setSettings(db, values) {
+  const put = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
+  for (const [k, v] of Object.entries(values)) {
+    if (!Object.hasOwn(DEFAULTS, k)) throw new Error(`unknown setting ${k}`);
+    put.run(k, String(v));
+  }
+}

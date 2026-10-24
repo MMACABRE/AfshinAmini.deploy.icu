@@ -1,0 +1,16 @@
+<%# Drag-and-drop file box. Locals: id (input id); optional name, accept and hint (default: a patient document).
+    The real file input covers the whole box (invisible), so a click opens the file chooser and a dropped file
+    lands in the input even without JavaScript. /js/app.js adds the drag highlight, shows the chosen file and
+    shrinks large photos to at most 3 MB before upload (D21). %>
+<%
+const dzName = typeof name !== 'undefined' && name ? name : 'file';
+const dzAccept = typeof accept !== 'undefined' && accept ? accept : '.pdf,.jpg,.jpeg,.png,.dcm,application/pdf,image/jpeg,image/png';
+const dzHint = typeof hint !== 'undefined' && hint ? hint : 'PDF، JPG، PNG یا DICOM · عکس‌های بزرگ خودکار کوچک می‌شوند';
+%>
+<label class="dropzone" for="<%= id %>">
+  <input class="dropzone-input" id="<%= id %>" type="file" name="<%= dzName %>" accept="<%= dzAccept %>" required data-dropzone>
+  <span class="dropzone-plus" aria-hidden="true"><svg class="icon"><use href="#i-plus"/></svg></span>
+  <span class="dropzone-title">فایل را اینجا رها کنید یا برای انتخاب بزنید</span>
+  <span class="dropzone-hint"><%= dzHint %></span>
+  <span class="dropzone-file" data-dropzone-file aria-live="polite"></span>
+</label>

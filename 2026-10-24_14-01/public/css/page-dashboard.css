@@ -1,0 +1,114 @@
+/* Dashboard page styles */
+
+/* Quick access (D21): one tall sage tile for the main action, quieter tiles around it.
+   Staff: 3 columns (primary + 2x2). Admin: 4 columns (primary + 3x2). */
+.quick { display: flex; flex-direction: column; gap: var(--sp-4); }
+.qa-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(132px, auto); gap: var(--sp-4); }
+.qa-grid.qa-admin { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qa-tile {
+  position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-4);
+  padding: var(--sp-5); border-radius: var(--radius-lg); min-width: 0;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text); box-shadow: var(--shadow-xs);
+}
+.qa-tile:hover { text-decoration: none; border-color: var(--accent-line); background: var(--raised); box-shadow: var(--shadow); translate: 0 -2px; }
+.qa-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-tint); color: var(--accent-text); }
+.qa-icon .icon { width: 22px; height: 22px; }
+.qa-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.qa-text b { font: 600 var(--fs-lg)/1.3 var(--font-head); letter-spacing: -.015em; }
+.qa-text > span { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.5; }
+
+.qa-primary {
+  grid-row: span 2; justify-content: flex-end; padding: var(--sp-6);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--accent-hover) 100%); border-color: transparent;
+  color: var(--text-on-accent); box-shadow: 0 14px 32px -16px var(--accent), var(--edge);
+}
+.qa-primary:hover { background: linear-gradient(160deg, var(--accent-hover) 0%, var(--accent) 100%); border-color: transparent; box-shadow: 0 18px 36px -16px var(--accent), var(--edge); }
+.qa-primary .qa-icon { width: 64px; height: 64px; border-radius: 18px; background: rgba(255, 255, 255, .16); color: inherit; margin-bottom: auto; }
+.qa-primary .qa-icon .icon { width: 32px; height: 32px; stroke-width: 2; }
+.qa-primary .qa-text b { font-size: var(--fs-2xl); letter-spacing: -.03em; }
+.qa-primary .qa-text > span { color: inherit; opacity: .85; font-size: var(--fs-md); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .qa-tile { transition: translate var(--t) var(--ease), box-shadow var(--t) var(--ease), border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+}
+@media (max-width: 1200px) {
+  .qa-grid.qa-admin { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .qa-admin .qa-primary { grid-row: span 1; grid-column: span 3; min-height: 160px; }
+}
+@media (max-width: 900px) {
+  .qa-grid, .qa-grid.qa-admin { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qa-primary, .qa-admin .qa-primary { grid-row: span 1; grid-column: 1 / -1; min-height: 160px; }
+}
+@media (max-width: 600px) {
+  .qa-grid { gap: var(--sp-3); grid-auto-rows: auto; }
+  .qa-tile { padding: var(--sp-4); gap: var(--sp-3); }
+  .qa-text b { font-size: var(--fs-md); }
+  .qa-text > span { font-size: var(--fs-xs); }
+  .qa-primary { padding: var(--sp-5); min-height: 0; flex-direction: row; align-items: center; gap: var(--sp-4); }
+  .qa-primary .qa-icon { margin-bottom: 0; width: 56px; height: 56px; flex: none; }
+  .qa-primary .qa-text b { font-size: var(--fs-xl); }
+}
+
+/* Today's visits card (D23) */
+.today-links { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+
+/* Live clock card (D24): neon seven-segment digits drawn in CSS (no font download), driven by app.js enhanceClock.
+   Always a dark panel, in light and dark theme alike. Segments: a top, b top-right, c bottom-right, d bottom, e bottom-left, f top-left, g middle.
+   The segment rules below use physical `left` on purpose (the one exception to the logical-properties rule): a digit's
+   shape never mirrors in RTL, and with inset-inline-start segments b/f and c/e would swap sides. .clock-time is ltr. */
+.clock-card {
+  --neon: #5dffb4;
+  display: flex; flex-direction: column; gap: var(--sp-2); align-items: center;
+  padding: var(--sp-4) var(--sp-6); border-radius: var(--radius-lg); min-width: 0; color: #d9fff0;
+  background: #08140f; border: 1px solid rgba(93, 255, 180, .16);
+}
+.clock-time { display: flex; align-items: flex-end; gap: .16em; direction: ltr; font-size: 42px; line-height: 1; filter: drop-shadow(0 0 .22em rgba(93, 255, 180, .5)); }
+.clock-sec { font-size: .55em; margin-inline-start: .3em; }
+.clock-group { display: flex; gap: .16em; }
+.clock-colon { display: flex; flex-direction: column; justify-content: center; gap: .3em; height: 1.1em; width: .14em; }
+.clock-colon i { display: block; width: .13em; height: .13em; border-radius: 50%; background: var(--neon); }
+.seg { position: relative; display: block; width: .62em; height: 1.1em; }
+.seg i { position: absolute; background: var(--neon); opacity: .09; transition: opacity .12s linear; }
+.seg .a, .seg .d, .seg .g { left: .075em; width: .47em; height: .12em; clip-path: polygon(0 50%, 12% 0, 88% 0, 100% 50%, 88% 100%, 12% 100%); }
+.seg .b, .seg .c, .seg .e, .seg .f { width: .12em; height: .46em; clip-path: polygon(50% 0, 100% 12%, 100% 88%, 50% 100%, 0 88%, 0 12%); }
+.seg .a { top: 0; } .seg .g { top: .49em; } .seg .d { top: .98em; }
+.seg .f { left: 0; top: .035em; } .seg .b { left: .5em; top: .035em; }
+.seg .e { left: 0; top: .525em; } .seg .c { left: .5em; top: .525em; }
+.seg[data-n="0"] .a, .seg[data-n="0"] .b, .seg[data-n="0"] .c, .seg[data-n="0"] .d, .seg[data-n="0"] .e, .seg[data-n="0"] .f { opacity: 1; }
+.seg[data-n="1"] .b, .seg[data-n="1"] .c { opacity: 1; }
+.seg[data-n="2"] .a, .seg[data-n="2"] .b, .seg[data-n="2"] .d, .seg[data-n="2"] .e, .seg[data-n="2"] .g { opacity: 1; }
+.seg[data-n="3"] .a, .seg[data-n="3"] .b, .seg[data-n="3"] .c, .seg[data-n="3"] .d, .seg[data-n="3"] .g { opacity: 1; }
+.seg[data-n="4"] .b, .seg[data-n="4"] .c, .seg[data-n="4"] .f, .seg[data-n="4"] .g { opacity: 1; }
+.seg[data-n="5"] .a, .seg[data-n="5"] .c, .seg[data-n="5"] .d, .seg[data-n="5"] .f, .seg[data-n="5"] .g { opacity: 1; }
+.seg[data-n="6"] .a, .seg[data-n="6"] .c, .seg[data-n="6"] .d, .seg[data-n="6"] .e, .seg[data-n="6"] .f, .seg[data-n="6"] .g { opacity: 1; }
+.seg[data-n="7"] .a, .seg[data-n="7"] .b, .seg[data-n="7"] .c { opacity: 1; }
+.seg[data-n="8"] .a, .seg[data-n="8"] .b, .seg[data-n="8"] .c, .seg[data-n="8"] .d, .seg[data-n="8"] .e, .seg[data-n="8"] .f, .seg[data-n="8"] .g { opacity: 1; }
+.seg[data-n="9"] .a, .seg[data-n="9"] .b, .seg[data-n="9"] .c, .seg[data-n="9"] .d, .seg[data-n="9"] .f, .seg[data-n="9"] .g { opacity: 1; }
+.clock-dates { display: flex; flex-direction: column; align-items: center; gap: 1px; text-align: center; }
+.clock-jalali { font: 500 var(--fs-sm)/1.4 var(--font-body); color: #d9fff0; }
+.clock-greg { font: 400 var(--fs-xs)/1.4 var(--font-body); color: #7fb9a0; direction: ltr; unicode-bidi: isolate; letter-spacing: .02em; }
+@media (prefers-reduced-motion: no-preference) {
+  .clock-colon { animation: clock-blink 1s steps(1, end) infinite; }
+  @keyframes clock-blink { 50% { opacity: .25; } }
+}
+.page-head .clock-card { flex: 0 1 300px; }
+@media (max-width: 600px) {
+  .page-head .clock-card { flex-basis: 100%; padding: var(--sp-4); }
+  .clock-time { font-size: 38px; }
+}
+
+/* «هشدارها» (D26): low stock and expiry, red first. */
+.alert-list { list-style: none; margin: 0; padding: var(--sp-2) var(--pad) var(--sp-4); display: flex; flex-direction: column; }
+.alert-row { display: flex; align-items: center; gap: var(--sp-3); min-height: 44px; border-bottom: 1px solid var(--border-subtle); font-size: var(--fs-sm); flex-wrap: wrap; }
+.alert-row:last-child { border-bottom: 0; }
+.alert-row > a { font-weight: 600; }
+.alert-row > span:not(.alert-dot):not(.sr-only) { margin-inline-start: auto; color: var(--text-2); }
+.alert-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.alert-crit .alert-dot { background: var(--crit-dot); box-shadow: 0 0 0 4px var(--crit-bg); }
+.alert-warn .alert-dot { background: var(--warn-dot); box-shadow: 0 0 0 4px var(--warn-bg); }
+
+/* «درآمد امروز» (D30), finance view only. */
+.income-today { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4) var(--pad); color: var(--text); flex-wrap: wrap; }
+.income-today:hover { text-decoration: none; border-color: var(--accent-line); }
+.income-today b { display: block; font: 700 var(--fs-xl)/1.2 var(--font-mono); direction: ltr; unicode-bidi: isolate; text-align: start; }
+.income-today .muted { margin-inline-start: auto; font-size: var(--fs-sm); }
