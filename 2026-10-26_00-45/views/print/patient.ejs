@@ -1,0 +1,53 @@
+<%# Full patient record. Locals: patient, medications, visits (null without visits view; each with bill when finance),
+    files (null without documents view), finance. Uploaded files are listed, never embedded. %>
+<%
+const m = (r) => formatMoney(r, cur);
+const { SEX, STATUS, CATEGORY } = labels;
+const dash = '—';
+const full = patient.first_name + ' ' + patient.last_name;
+const kv = [
+  ['کد بیمار', patient.code, true], ['نام پدر', patient.father_name], ['کد ملی', patient.national_id, true], ['تاریخ تولد', patient.birth_date ? formatJalali(patient.birth_date) : null],
+  ['جنسیت', patient.sex ? SEX[patient.sex] : null], ['تلفن', patient.phone, true], ['شهر', patient.city],
+  ['گروه خونی', patient.blood_type, true], ['قد', patient.height_cm ? faDigits(patient.height_cm) + ' سانتی‌متر' : null], ['وزن', patient.weight_kg ? faDigits(patient.weight_kg) + ' کیلوگرم' : null],
+  ['فشار خون', patient.blood_pressure, true], ['بیمه', patient.insurance_name], ['وضعیت', STATUS[patient.status].label],
+];
+%>
+<%- include('top', { title: 'پرونده‌ی کامل بیمار', params: [full, patient.code], size: 'a4', back: '/patients/' + patient.code }) %>
+    <h2>مشخصات</h2>
+    <div class="doc-kv"><% kv.forEach(([k, v, mono]) => { %><div><b><%= k %>:</b> <span class="<%= mono ? 'mono' : '' %>"><%= v || dash %></span></div><% }) %></div>
+    <% if (patient.address) { %><p><b class="muted">نشانی:</b> <%= patient.address %></p><% } %>
+    <% if (patient.allergies || patient.conditions) { %><p><b class="muted">حساسیت‌ها:</b> <%= patient.allergies || dash %> · <b class="muted">بیماری‌ها:</b> <%= patient.conditions || dash %></p><% } %>
+    <% if (patient.medical_notes) { %><h2>یادداشت‌های بالینی</h2><p class="doc-pre"><%= patient.medical_notes %></p><% } %>
+
+    <% if (medications.length) { %>
+    <h2>داروهای مصرفی</h2>
+    <table class="doc-table"><thead><tr><th>دارو</th><th>دوز</th><th>تواتر</th></tr></thead>
+      <tbody><% medications.forEach((md) => { %><tr><td><%= md.name %></td><td><%= md.dosage || dash %></td><td><%= md.frequency || dash %></td></tr><% }) %></tbody></table>
+    <% } %>
+
+    <% if (visits) { %>
+    <h2>ویزیت‌ها (<%= faDigits(visits.length) %>)</h2>
+    <% if (!visits.length) { %><div class="doc-empty">ویزیتی ثبت نشده است.</div><% } %>
+    <% visits.forEach((v) => { %>
+    <div class="doc-visit">
+      <p><b><%= v.number ? 'ویزیت ' + faDigits(v.number) : 'ویزیت لغوشده' %></b> · <%= formatJalali(v.visit_date) %> · <span class="mono"><%= v.visit_time %></span><% if (v.reason) { %> · <%= v.reason %><% } %></p>
+      <% if (v.doctor_note) { %><p class="doc-pre"><span class="muted">شرح پزشک:</span> <%= v.doctor_note %></p><% } %>
+      <% if (v.bill && (v.bill.lines.length || v.bill.payments.length)) { %>
+      <table class="doc-table"><tbody>
+        <% v.bill.lines.forEach((l) => { %><tr><td><%= l.name %></td><td class="num"><%= faDigits(l.qty) %></td><td class="num"><span class="money"><%= m(l.net) %></span></td></tr><% }) %>
+        <tr><td class="muted">قابل پرداخت / پرداخت‌شده</td><td></td><td class="num"><span class="money"><%= m(v.bill.owed) %></span> / <span class="money"><%= m(v.bill.paid) %></span></td></tr>
+      </tbody></table>
+      <% } %>
+    </div>
+    <% }) %>
+    <% } %>
+
+    <% if (files) { %>
+    <h2>مدارک بارگذاری‌شده (<%= faDigits(files.length) %>)</h2>
+    <% if (!files.length) { %><div class="doc-empty">مدرکی بارگذاری نشده است.</div><% } else { %>
+    <table class="doc-table"><thead><tr><th>عنوان یا نام فایل</th><th>طبقه‌بندی</th><th>تاریخ</th></tr></thead>
+      <tbody><% files.forEach((f) => { %><tr><td><%= (f.row && f.row.title) || f.filename %><% if (f.row && f.row.title) { %><span class="sub mono"><%= f.filename %></span><% } %></td><td><%= f.row ? CATEGORY[f.row.category] : 'طبقه‌بندی نشده' %></td><td><%= formatJalali((f.row && f.row.doc_date) || localDay(f.modified), 'short') %></td></tr><% }) %></tbody></table>
+    <% } %>
+    <p class="doc-note">فایل‌ها در این فرم فقط فهرست شده‌اند؛ خود فایل‌ها در پرونده‌ی بیمار در سامانه هستند.</p>
+    <% } %>
+<%- include('bottom') %>

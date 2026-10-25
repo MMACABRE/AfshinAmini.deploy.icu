@@ -1,0 +1,66 @@
+<%# Finance overview (D29). Locals: figures, monthName, charts (SVG strings built by src/lib/charts.js), tables. %>
+<%
+const money = (r) => '<span class="money">' + formatMoney(r, cur) + '</span>';
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'امور مالی', pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">Finance</span></div>
+          <h1>امور مالی</h1>
+          <p>درآمد همیشه در روزی حساب می‌شود که پول دریافت شده است؛ پیش‌پرداخت در روز پرداخت می‌آید، نه روز ویزیت.</p>
+        </div>
+        <% if (can('pdf')) { %>
+        <div class="head-actions">
+          <a class="btn btn-sm" href="/print/finance/day"><svg class="icon"><use href="#i-print"/></svg>گزارش مالی امروز</a>
+          <% if (can('patients') && can('visits')) { %><a class="btn btn-sm" href="/print/visits/day"><svg class="icon"><use href="#i-print"/></svg>فهرست ویزیت‌های امروز</a><% } %>
+        </div>
+        <% } %>
+      </div>
+      <%- include('nav', { here: 'overview' }) %>
+
+      <section class="grid grid-3 fin-figures" aria-label="درآمد">
+        <article class="card stat"><div class="stat-label">درآمد امروز <span class="stat-icon"><svg class="icon"><use href="#i-wallet"/></svg></span></div><div class="stat-value fin-value"><%- money(figures.today.total) %></div><div class="stat-delta"><%= faDigits(figures.today.count) %> پرداخت</div></article>
+        <article class="card stat"><div class="stat-label">درآمد این هفته</div><div class="stat-value fin-value"><%- money(figures.week.total) %></div><div class="stat-delta">از شنبه · <%= faDigits(figures.week.count) %> پرداخت</div></article>
+        <article class="card stat"><div class="stat-label">درآمد <%= monthName %></div><div class="stat-value fin-value"><%- money(figures.month.total) %></div><div class="stat-delta"><%= faDigits(figures.month.count) %> پرداخت</div></article>
+      </section>
+      <section class="grid grid-2 fin-figures mt-3" aria-label="مانده و بستانکار">
+        <article class="card stat"><div class="stat-label">مانده‌ی همه‌ی بیماران</div><div class="stat-value fin-value fin-due"><%- money(figures.remaining) %></div><div class="stat-delta">بدهی ثبت‌شده که هنوز پرداخت نشده؛ درآمد نیست</div></article>
+        <article class="card stat"><div class="stat-label">بستانکاری بیماران</div><div class="stat-value fin-value"><%- money(figures.credit) %></div><div class="stat-delta">پولی که باید برگردد یا به ویزیت دیگری منتقل شود</div></article>
+      </section>
+
+      <div class="chart-grid mt-6">
+        <section class="card chart-card" aria-labelledby="ch1">
+          <div class="card-head"><div><h2 id="ch1">درآمد روزانه</h2><p>۳۰ روز اخیر؛ امروز پررنگ است</p></div></div>
+          <div class="card-body"><%- charts.daily %></div>
+          <table class="sr-only"><caption>درآمد روزانه</caption><tbody><% tables.days.forEach((d) => { %><tr><th scope="row"><%= formatJalali(d.day) %></th><td><%= formatMoney(d.total, cur) %></td></tr><% }) %></tbody></table>
+        </section>
+        <section class="card chart-card" aria-labelledby="ch2">
+          <div class="card-head"><div><h2 id="ch2">درآمد ماهانه</h2><p>۶ ماه اخیر</p></div></div>
+          <div class="card-body"><%- charts.monthly %></div>
+          <table class="sr-only"><caption>درآمد ماهانه</caption><tbody><% tables.months.forEach((m) => { %><tr><th scope="row"><%= m.label %></th><td><%= formatMoney(m.value, cur) %></td></tr><% }) %></tbody></table>
+        </section>
+        <section class="card chart-card" aria-labelledby="ch3">
+          <div class="card-head"><div><h2 id="ch3">فروش <%= monthName %> بر اساس نوع</h2><p>جمع ردیف‌های صورتحساب ویزیت‌های این ماه، پس از تخفیف ردیف<% if (tables.billDisc) { %>؛ تخفیف کل صورتحساب‌ها: <%- money(tables.billDisc) %><% } %></p></div></div>
+          <div class="card-body"><%- charts.source %></div>
+          <% if (charts.top) { %><div class="card-body chart-sub"><h3>پرفروش‌ترین موارد</h3><%- charts.top %></div><% } %>
+          <table class="sr-only"><caption>فروش بر اساس نوع و مورد</caption><tbody><% tables.sourceRows.concat(tables.top).forEach((r) => { %><tr><th scope="row"><%= r.label %></th><td><%= formatMoney(r.value, cur) %></td></tr><% }) %></tbody></table>
+        </section>
+        <% if (charts.usage) { %>
+        <section class="card chart-card" aria-labelledby="ch4">
+          <div class="card-head"><div><h2 id="ch4">مصرف کالا</h2><p>تعداد کالای مصرف‌شده در ویزیت‌ها، ۳۰ روز اخیر</p></div></div>
+          <div class="card-body"><%- charts.usage %></div>
+          <table class="sr-only"><caption>مصرف کالا</caption><tbody><% tables.usage.forEach((d) => { %><tr><th scope="row"><%= formatJalali(d.day) %></th><td><%= faDigits(d.total) %> عدد</td></tr><% }) %></tbody></table>
+        </section>
+        <% } %>
+      </div>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

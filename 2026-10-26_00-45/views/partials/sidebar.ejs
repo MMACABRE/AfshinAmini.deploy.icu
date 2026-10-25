@@ -1,0 +1,54 @@
+<%# Sidebar. Locals from res.locals: active (nav key), user, patientCount, can, has, roleLabel. Links the user may not
+    open are not shown (D25). %>
+<aside class="sidebar">
+  <a class="brand" href="/">
+    <span class="brand-mark"><svg class="icon"><use href="#i-cross"/></svg></span>
+    <span><%= siteName %><small>پرتال کارکنان</small></span>
+  </a>
+  <nav class="nav" aria-label="منوی اصلی">
+    <div class="nav-label">فضای کار</div>
+    <a href="/"<%- active === 'dashboard' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-home"/></svg><span>داشبورد</span></a>
+    <% if (can('patients')) { %>
+    <a href="/patients"<%- active === 'patients' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-users"/></svg><span>بیماران</span><span class="count"><%= faDigits(patientCount.toLocaleString('en-US').replace(/,/g, '٬')) %></span></a>
+    <% } %>
+    <% if (can('patients') && can('visits')) { %>
+    <a href="/visits"<%- active === 'visits' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-calendar"/></svg><span>ویزیت‌ها</span></a>
+    <% } %>
+    <% if (can('storage')) { %>
+    <a href="/storage"<%- active === 'storage' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-box"/></svg><span>انبار</span></a>
+    <% } %>
+    <% if (can('finance')) { %>
+    <a href="/finance"<%- active === 'finance' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-wallet"/></svg><span>امور مالی</span></a>
+    <% } %>
+    <% if (can('sms') && can('patients')) { %>
+    <a href="/sms"<%- active === 'sms' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-mail"/></svg><span>پیامک</span></a>
+    <% } %>
+    <% if (can('pdf')) { %>
+    <a href="/print"<%- active === 'print' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-print"/></svg><span>فرم‌های چاپی</span></a>
+    <% } %>
+    <% if (can('patients') || can('data') || can('users') || has('audit_log')) { %>
+    <div class="nav-label">داده</div>
+    <% } %>
+    <% if (can('patients')) { %>
+    <a href="/search"<%- active === 'search' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-search"/></svg><span>جستجوی پیشرفته</span></a>
+    <% } %>
+    <% if (can('data')) { %>
+    <a href="/data"<%- active === 'data' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-swap"/></svg><span>ورود و خروج داده</span></a>
+    <% } %>
+    <% if (can('users')) { %>
+    <a href="/admin/users"<%- active === 'users' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-users"/></svg><span>مدیریت کاربران</span></a>
+    <% } %>
+    <% if (has('audit_log')) { %>
+    <a href="/admin/audit"<%- active === 'audit' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-shield"/></svg><span>گزارش فعالیت</span></a>
+    <% } %>
+    <div class="nav-label">پشتیبانی</div>
+    <a href="/contact"<%- active === 'contact' ? ' aria-current="page"' : '' %>><svg class="icon"><use href="#i-help"/></svg><span>تماس با ما</span></a>
+  </nav>
+  <div class="sidebar-foot">
+    <a class="user-chip" href="/account" title="حساب کاربری"<%- active === 'account' ? ' aria-current="page"' : '' %>>
+      <span class="avatar"><%= Array.from(user.displayName)[0] %></span>
+      <div><b><%= user.displayName %></b><span><%= roleLabel %></span></div>
+    </a>
+    <form method="post" action="/logout"><button class="btn btn-sm btn-block" type="submit">خروج</button></form>
+  </div>
+</aside>
