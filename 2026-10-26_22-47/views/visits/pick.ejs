@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ویزیت جدید', pageCss: 'page-visits' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/visits" lang="en">Visits</a> / جدید</div>
+      <div class="page-head"><div><h1>ویزیت جدید</h1><p>نخست بیمار را پیدا کنید.</p></div></div>
+
+      <section class="card">
+        <form class="toolbar" method="get" action="/visits/new">
+          <div class="input-group flex-1-240-420">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input class="input" type="search" name="q" value="<%= text %>" placeholder="نام، کد یا شماره تلفن" aria-label="جستجوی بیمار" autofocus>
+          </div>
+          <button class="btn btn-primary" type="submit">جستجو</button>
+        </form>
+        <% if (text && found.length === 0) { %>
+        <div class="card-body"><p class="muted">بیماری با این مشخصات پیدا نشد.</p></div>
+        <% } %>
+        <% if (found.length) { %>
+        <ul class="visit-list pick-list">
+          <% found.forEach((p) => { %>
+          <li class="visit"><div class="visit-body"><b><%= p.first_name %> <%= p.last_name %></b><span class="mono"><%= p.code %></span></div>
+            <a class="btn btn-sm btn-primary" href="/visits/new?patient=<%= p.code %>">انتخاب</a></li>
+          <% }) %>
+        </ul>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>
