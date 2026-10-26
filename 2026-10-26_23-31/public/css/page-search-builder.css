@@ -1,0 +1,248 @@
+/* Page-specific styles for the advanced search page (clinic-ui/search-builder.html) */
+
+/* Margin utilities */
+.mb-3 {
+  margin-bottom: var(--sp-3);
+}
+
+.mt-6 {
+  margin-top: var(--sp-6);
+}
+
+/* Text styling */
+.text-xs-muted {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.text-sm {
+  font-size: var(--fs-sm);
+}
+
+.text-sm-muted {
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+.bold-text {
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* Join choice (AND / OR) as two radio buttons */
+.join-opts {
+  gap: 2px;
+}
+
+.join-opt {
+  position: relative;
+  padding: 5px 12px;
+  border-radius: 6px;
+  font: 600 var(--fs-xs)/1 var(--font-body);
+  color: var(--text-3);
+  letter-spacing: .02em;
+  cursor: pointer;
+}
+
+.join-opt:hover {
+  color: var(--text);
+}
+
+.join-opt:has(input:checked) {
+  background: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.join-opt:has(input:focus-visible) {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.join-opt input {
+  position: absolute;
+  inset-inline-start: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+  margin: 0;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Join choice and status switch share one bar */
+.qb-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-4);
+}
+
+.qb-status-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+.qb-status-wrap .qb-status {
+  width: auto;
+  min-width: 140px;
+}
+
+/* With app.js the select is replaced by one button that cycles the status and changes colour */
+.qb-status-btn {
+  height: var(--ctl-h);
+  padding-inline: var(--sp-4);
+  border: 1px solid transparent;
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 120px;
+  justify-content: center;
+}
+
+.qb-status-btn:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+.qb-rule [hidden],
+.qb-bar [hidden] {
+  display: none !important;
+}
+
+/* Value buttons for list fields (sex, blood type) */
+.qb-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  min-width: 0;
+}
+
+.qb-rule.rule-flat > .qb-choices { /* spans the value and second-value cells */
+  grid-column: 3 / -1;
+}
+
+@media (max-width: 900px) {
+  .qb-rule.rule-flat > .qb-choices {
+    grid-column: 1 / -1;
+  }
+}
+
+.qb-choice {
+  min-height: var(--field-h);
+  min-width: 52px;
+  padding: 0 var(--sp-4);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: 500 var(--fs-sm)/1 var(--font-body);
+  cursor: pointer;
+}
+
+.qb-choice:hover {
+  border-color: var(--accent);
+}
+
+.qb-choice[aria-pressed="true"] {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--text-on-accent);
+}
+
+.qb-choice:focus-visible {
+  outline: 2px solid var(--accent-line);
+  outline-offset: 2px;
+}
+
+/* Flat rule rows: four controls (field, operator, value, second value for «بین») */
+.qb-rule.rule-flat {
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, .9fr) minmax(0, 1.1fr) minmax(0, 1fr);
+}
+
+@media (max-width: 900px) {
+  .qb-rule.rule-flat {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .qb-rule.rule-flat > .input,
+  .qb-rule.rule-flat > .field-addon { /* app.js wraps the value inputs for the calendar button */
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 600px) {
+  .qb-rule.rule-flat {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Layout utilities */
+.flex-auto-240 {
+  flex: 1;
+  margin-inline-start: auto;
+  max-width: 240px;
+}
+
+/* Input styling */
+.input-offset {
+  padding-inline-start: 46px;
+}
+
+/* Saved searches */
+.saved-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  padding: var(--sp-4) var(--pad);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.saved-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.saved-actions form {
+  margin: 0;
+}
+
+/* List styling */
+.list-no-pad {
+  padding: 0;
+}
+
+.list-sm-no-pad {
+  padding: 0;
+  font-size: var(--fs-sm);
+}
+
+.list > .list-item-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: flex-start;
+  padding: var(--sp-4) var(--pad);
+}
+
+.list > .list-item-col-tight {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  align-items: flex-start;
+}
+
+/* Query summary */
+.code-block {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: var(--sp-4);
+  font-size: var(--fs-sm);
+  line-height: 1.8;
+  text-align: start;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}

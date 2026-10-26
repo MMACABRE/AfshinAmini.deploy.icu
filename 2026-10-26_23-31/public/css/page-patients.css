@@ -1,0 +1,27 @@
+/* Patients page styles */
+
+/* Layout utilities */
+.flex-1 { flex: 1; }
+.min-w-240px { min-width: 240px; }
+.max-w-420px { max-width: 420px; }
+
+/* Flex utilities */
+.flex-1-240-420 {
+  flex: 1;
+  min-width: 240px;
+  max-width: 420px;
+}
+
+/* .toolbar-gap lives in components.css (also used on the patient profile) */
+
+/* Status chips are submit buttons that filter the list */
+.chip.chip-filter {
+  cursor: pointer;
+}
+
+/* Link utilities */
+.link-secondary { font-size: var(--fs-sm); color: var(--accent-text); }
+
+/* Ellipsis */
+.ellipsis { color: var(--text-3); }
+

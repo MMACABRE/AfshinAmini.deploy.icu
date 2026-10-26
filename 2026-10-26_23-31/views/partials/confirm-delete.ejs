@@ -1,0 +1,10 @@
+<%# Two-step delete without a browser dialog. Locals: action (form URL), question (Persian sentence),
+    optional back (hidden field value). %>
+<details class="confirm">
+  <summary class="btn btn-sm btn-ghost btn-quiet-danger"><svg class="icon"><use href="#i-trash"/></svg><span>حذف</span></summary>
+  <form class="confirm-pop" method="post" action="<%= action %>">
+    <% if (typeof back !== 'undefined' && back) { %><input type="hidden" name="back" value="<%= back %>"><% } %>
+    <p><%= question %></p>
+    <button class="btn btn-sm btn-danger" type="submit">بله، حذف شود</button>
+  </form>
+</details>
