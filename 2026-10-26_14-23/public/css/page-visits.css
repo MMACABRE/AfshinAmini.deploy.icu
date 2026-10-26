@@ -1,0 +1,26 @@
+/* Visits page (D23) */
+.visit-toolbar { justify-content: space-between; align-items: flex-start; }
+.visit-ranges { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.visit-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+.field-inline { display: flex; align-items: center; gap: var(--sp-2); }
+.field-inline label { font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; }
+.field-inline .input { width: 150px; }
+.visit-day h2 { font: 600 var(--fs-md)/1.4 var(--font-head); padding: 18px var(--pad) 6px; display: flex; align-items: center; gap: var(--sp-2); }
+.visit-day + .visit-day { border-top: 1px solid var(--border); }
+.pick-list .visit { grid-template-columns: minmax(0, 1fr) auto; }
+@media (max-width: 600px) {
+  .visit-filters, .field-inline { width: 100%; }
+  .field-inline .input { flex: 1; width: auto; }
+  .visit-filters .select { flex: 1; }
+}
+
+/* Day header: big day number, weekday and month beside it */
+.day-head { display: flex; align-items: center; gap: var(--sp-3); padding: 20px var(--pad) 8px; font: inherit; }
+.day-num { display: grid; place-items: center; min-width: 48px; height: 48px; padding: 0 6px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); font: 700 var(--fs-xl)/1 var(--font-head); }
+.is-today .day-num { background: var(--accent); border-color: transparent; color: var(--text-on-accent); }
+.day-meta { display: flex; flex-direction: column; line-height: 1.35; }
+.day-meta small { font-size: var(--fs-xs); color: var(--text-3); }
+.day-meta b { font: 600 var(--fs-md)/1.35 var(--font-head); }
+.day-count { margin-inline-start: auto; font-size: var(--fs-sm); color: var(--text-3); }
+.pick-list .visit::before { display: none; }
+.pick-list .visit { padding-inline-start: var(--pad); }

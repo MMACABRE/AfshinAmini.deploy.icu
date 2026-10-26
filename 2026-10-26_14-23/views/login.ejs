@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('partials/head', { title: 'ورود', pageCss: 'page-signin' }) %>
+</head>
+<body>
+
+<%- include('partials/sprite') %>
+
+<div class="auth-theme"><%- include('partials/theme-toggle') %></div>
+
+<div class="auth">
+  <div class="auth-side">
+    <div>
+      <span class="brand-mark auth-brand mb-3rem"><svg class="icon"><use href="#i-cross"/></svg></span>
+      <p class="auth-side-title mb-1rem">دسترسی امن کارکنان</p>
+      <p class="muted mb-2rem auth-intro">فقط کارکنان مجاز با حساب کاربری شخصی به پرونده‌ی بیماران دسترسی دارند.</p>
+    </div>
+    <div class="sidebar-footer"><%= siteName %></div>
+  </div>
+
+  <div class="auth-main">
+    <form class="auth-card" method="post" action="/login">
+      <div>
+        <h1 class="mb-sp2">ورود</h1>
+        <p class="muted signin-subtitle">برای دسترسی به پرونده‌ی بیماران وارد شوید.</p>
+      </div>
+
+      <% if (error) { %>
+        <div class="info-box" role="alert"><%= error %></div>
+      <% } %>
+
+      <div class="stack-lg">
+        <input type="hidden" name="next" value="<%= next %>">
+        <div class="field">
+          <label for="username">نام کاربری</label>
+          <input class="input" type="text" id="username" name="username" value="<%= username %>"
+                 autocomplete="username" dir="ltr" required autofocus>
+        </div>
+
+        <div class="field">
+          <label for="password">رمز عبور</label>
+          <input class="input" type="password" id="password" name="password"
+                 autocomplete="current-password" dir="ltr" required>
+        </div>
+
+        <button type="submit" class="btn btn-primary btn-block">
+          <svg class="icon"><use href="#i-check"/></svg>
+          ورود
+        </button>
+
+        <p class="text-center link-sm muted">رمز عبور را فراموش کرده‌اید؟ به مدیر سیستم اطلاع دهید.</p>
+        <p class="text-center link-sm"><a class="contact-link" href="/contact"><svg class="icon"><use href="#i-help"/></svg>مشکلی پیش آمده؟ تماس با پشتیبانی</a></p>
+      </div>
+    </form>
+  </div>
+</div>
+
+</body>
+</html>
