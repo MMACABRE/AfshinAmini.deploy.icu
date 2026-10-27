@@ -1,0 +1,21 @@
+<%# Shared <head>. Locals: title (string), pageCss (optional file name in /css, without .css) %>
+<%# ?v= changes on every server start, so browsers fetch fresh CSS/JS after an update despite the 1 h cache. %>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<%# The app has its own light and dark themes (button in the top bar); this tells the Dark Reader extension not to recolour it. %>
+<meta name="darkreader-lock">
+<%# Tab and bookmark icon: the klerk mark, the same leaf tile with a cross as .brand-mark in the sidebar
+    (public/favicon.svg, which switches to the dark-theme colours with the system theme); the .ico and the 180px PNG
+    are light-theme copies of it for browsers and phone home screens that do not take SVG. Browsers keep tab icons
+    far longer than other files, so they carry ?v= too. %>
+<link rel="icon" href="/favicon.ico?v=<%= assetVersion %>" sizes="32x32">
+<link rel="icon" href="/favicon.svg?v=<%= assetVersion %>" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png?v=<%= assetVersion %>">
+
+<title><%= title %> · <%= locals.siteName || 'KLERK | کلرک' %></title>
+<link rel="stylesheet" href="/css/tokens.css?v=<%= assetVersion %>">
+<link rel="stylesheet" href="/css/base.css?v=<%= assetVersion %>">
+<link rel="stylesheet" href="/css/components.css?v=<%= assetVersion %>">
+<script type="module" src="/js/app.js?v=<%= assetVersion %>"></script>
+<% if (typeof pageCss !== 'undefined' && pageCss) { %><link rel="stylesheet" href="/css/<%= pageCss %>.css?v=<%= assetVersion %>"><% } %>

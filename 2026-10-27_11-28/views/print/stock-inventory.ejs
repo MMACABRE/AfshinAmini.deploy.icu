@@ -1,0 +1,39 @@
+<%# Stock on hand (D41). Locals: day, items (itemsWithStock rows, each with lots [{ received_on, qty_in, remaining, expires_on, level, days }]), alertCount. %>
+<%
+const STATE = { expired: 'منقضی شده', crit: 'انقضای نزدیک', warn: 'انقضا در ۳۰ روز' };
+const left = (d) => (d === null ? '' : d < 0 ? faDigits(-d) + ' روز گذشته' : d === 0 ? 'امروز' : faDigits(d) + ' روز مانده');
+%>
+<%- include('top', { title: 'موجودی انبار', params: [formatJalali(day), faDigits(items.length) + ' کالا', faDigits(alertCount) + ' هشدار'], size: 'a4', back: '/storage' }) %>
+    <% if (!items.length) { %>
+    <div class="doc-empty">هنوز کالایی در انبار تعریف نشده است.</div>
+    <% } else { %>
+    <table class="doc-table report-table">
+      <thead><tr><th>ورود کالا</th><th class="num">ورودی</th><th class="num">مانده</th><th>تاریخ انقضا</th><th>وضعیت</th></tr></thead>
+      <% items.forEach((it, i) => { %>
+      <tbody class="report-visit">
+        <tr class="report-head">
+          <td colspan="5">
+            <span class="report-n"><%= faDigits(i + 1) %></span>
+            <b><%= it.name %></b>
+            <span class="report-time"><span class="report-time-label">موجود قابل مصرف</span> <span class="report-count"><%= faDigits(it.usable) %></span></span>
+            <% if (it.low) { %><span class="stock-state is-<%= it.low %>"><%= it.low === 'crit' ? 'موجودی بحرانی' : 'موجودی کم' %></span><% } %>
+          </td>
+        </tr>
+        <% if (!it.lots.length) { %>
+        <tr><td colspan="5" class="report-muted">موجودی ندارد.</td></tr>
+        <% } %>
+        <% it.lots.forEach((l) => { %>
+        <tr>
+          <td><%= formatJalali(l.received_on, 'short') %></td>
+          <td class="num"><%= faDigits(l.qty_in) %></td>
+          <td class="num"><b><%= faDigits(l.remaining) %></b></td>
+          <td><%= l.expires_on ? formatJalali(l.expires_on, 'short') : 'بدون تاریخ انقضا' %><% if (l.days !== null) { %><span class="sub"><%= left(l.days) %></span><% } %></td>
+          <td><% if (l.level) { %><span class="stock-state is-<%= l.level %>"><%= STATE[l.level] %></span><% } else { %><span class="stock-state">سالم</span><% } %></td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <% }) %>
+    </table>
+    <% } %>
+    <p class="doc-note">«موجود قابل مصرف» بدون بسته‌های منقضی است؛ بسته‌ی منقضی تا ثبت ضایعات در فهرست می‌ماند. هر ردیف یک بار ورود کالاست و مصرف همیشه از زودترین انقضا برداشته می‌شود. هشدار انقضا از ۳۰ روز مانده (زرد) و ۱۰ روز مانده (قرمز) است.</p>
+<%- include('bottom') %>
