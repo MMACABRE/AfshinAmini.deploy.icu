@@ -1,0 +1,19 @@
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('partials/head', { title: 'خطا' }) %>
+</head>
+<body>
+  <main class="main">
+    <div class="card">
+      <h1><%= faDigits(status) %></h1>
+      <p class="muted"><%= message %></p>
+      <% if (typeof login !== 'undefined' && login) { %>
+      <p><a class="btn btn-primary" href="/login">ورود دوباره</a></p>
+      <% } else { %>
+      <p><a class="btn" href="/">بازگشت به صفحه‌ی اصلی</a></p>
+      <% } %>
+    </div>
+  </main>
+</body>
+</html>

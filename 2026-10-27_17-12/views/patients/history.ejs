@@ -1,0 +1,73 @@
+<%# «سوابق درمان و مالی» (D27): every visit of one patient with its bill and payments, newest first.
+    Locals: patient, visits (with number, bill), totals. %>
+<%
+const full = patient.first_name + ' ' + patient.last_name;
+const money = (r) => '<span class="money">' + formatMoney(r, cur) + '</span>';
+const KIND = { payment: 'پرداخت', refund: 'بازپرداخت', move_out: 'انتقال به ویزیت دیگر', move_in: 'انتقال از ویزیت دیگر' };
+const STATUS = { scheduled: ['chip-info', 'برنامه‌ریزی‌شده'], done: ['chip-ok', 'انجام‌شده'], cancelled: ['chip-mute', 'لغو‌شده'] };
+const curName = cur === 'R' ? 'ریال' : 'تومان';
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'سوابق درمان و مالی ' + full, pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/patients">بیماران</a> / <a href="/patients/<%= patient.code %>"><%= full %></a> / سوابق درمان و مالی</div>
+      <div class="page-head">
+        <div><h1>سوابق درمان و مالی</h1><p><a href="/patients/<%= patient.code %>"><%= full %></a> · <span class="mono"><%= patient.code %></span> · <%= faDigits(visits.length) %> ویزیت</p></div>
+        <% if (can('pdf')) { %><a class="btn btn-sm" href="/print/patients/<%= patient.code %>"><svg class="icon"><use href="#i-print"/></svg>چاپ پرونده‌ی کامل</a><% } %>
+      </div>
+
+      <section class="history-strip" aria-label="جمع مالی بیمار">
+        <article class="card stat"><div class="stat-label">جمع صورتحساب‌ها</div><div class="stat-value text-xl"><%- money(totals.owed) %></div></article>
+        <article class="card stat"><div class="stat-label">پرداخت‌شده</div><div class="stat-value text-xl"><%- money(totals.paid) %></div></article>
+        <article class="card stat"><div class="stat-label">مانده</div><div class="stat-value text-xl"><%- money(totals.remaining) %></div></article>
+        <article class="card stat"><div class="stat-label">بستانکار</div><div class="stat-value text-xl"><%- money(totals.credit) %></div></article>
+      </section>
+
+      <section class="card mb-4" aria-labelledby="disc-h">
+        <div class="card-head"><div><h2 id="disc-h">تخفیف دائمی بیمار</h2><p>روی صورتحساب‌های تازه‌ی این بیمار، با اولین ردیف، گذاشته می‌شود.</p></div>
+          <span class="chip <%= patient.disc_kind ? 'chip-info' : 'chip-mute' %> chip-plain"><%= patient.disc_kind ? describeDiscount(patient.disc_kind, patient.disc_value, cur) : 'ندارد' %></span></div>
+        <% if (can('finance', 2)) { %>
+        <form class="card-body inline-form" method="post" action="/patients/<%= patient.code %>/discount">
+          <select class="select select-sm" name="disc_kind" aria-label="نوع تخفیف"><option value="percent"<%- patient.disc_kind !== 'amount' ? ' selected' : '' %>>درصد</option><option value="amount"<%- patient.disc_kind === 'amount' ? ' selected' : '' %>>مبلغ (<%= curName %>)</option></select>
+          <input class="input input-money" type="text" name="disc_value" inputmode="numeric" dir="ltr" aria-label="مقدار تخفیف" value="<%= patient.disc_kind === 'amount' ? moneyInput(patient.disc_value, cur) : (patient.disc_value || '') %>" placeholder="خالی یعنی بدون تخفیف">
+          <button class="btn btn-sm" type="submit">ثبت</button>
+        </form>
+        <% } %>
+      </section>
+
+      <% if (!visits.length) { %>
+      <section class="card"><div class="card-body empty-state"><svg class="icon"><use href="#i-wallet"/></svg><p>این بیمار هنوز ویزیتی ندارد.</p></div></section>
+      <% } %>
+      <% visits.forEach((v) => { const b = v.bill; %>
+      <section class="card history-visit" aria-labelledby="hv-<%= v.id %>">
+        <div class="card-head">
+          <div><h2 id="hv-<%= v.id %>"><a href="/visits/<%= v.id %>"><%= v.number ? 'ویزیت ' + faDigits(v.number) : 'ویزیت' %> — <%= formatJalali(v.visit_date) %></a></h2>
+            <p><span class="mono"><%= faDigits(v.visit_time) %></span><% if (v.reason) { %> · <%= v.reason %><% } %></p></div>
+          <div class="chips"><span class="chip <%= STATUS[v.status][0] %>"><%= STATUS[v.status][1] %></span>
+            <% if (b.credit) { %><span class="chip chip-info">بستانکار <%= formatMoney(b.credit, cur) %></span><% } else if (b.remaining) { %><span class="chip chip-warn">مانده <%= formatMoney(b.remaining, cur) %></span><% } else if (b.owed) { %><span class="chip chip-ok">تسویه</span><% } %></div>
+        </div>
+        <% if (v.doctor_note && can('visits')) { %><div class="card-body"><div class="notes-box"><%= v.doctor_note %></div></div><% } %>
+        <% if (b.lines.length || b.payments.length) { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">شرح</th><th scope="col">تعداد</th><th scope="col">مبلغ</th></tr></thead>
+            <tbody>
+              <% b.lines.forEach((l) => { %><tr><td data-label="شرح"><%= l.name %></td><td data-label="تعداد"><%= faDigits(l.qty) %></td><td data-label="مبلغ"><%- money(l.net) %></td></tr><% }) %>
+              <% if (b.billDisc) { %><tr><td data-label="شرح">تخفیف کل</td><td></td><td data-label="مبلغ"><%- money(-b.billDisc) %></td></tr><% } %>
+              <% b.payments.forEach((p) => { %><tr class="row-mute"><td data-label="شرح"><%= KIND[p.kind] %> · <%= formatJalali(p.paid_on, 'short') %><%= p.method ? ' · ' + p.method : '' %></td><td></td><td data-label="مبلغ"><%- money(p.amount) %></td></tr><% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% } %>
+        <div class="card-foot"><span>قابل پرداخت <%- money(b.owed) %> · پرداخت‌شده <%- money(b.paid) %></span><a class="btn btn-sm" href="/visits/<%= v.id %>">صفحه‌ی ویزیت</a></div>
+      </section>
+      <% }) %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

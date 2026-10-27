@@ -1,0 +1,42 @@
+<%# Daily product report (D40). Locals: day, visits (each with its item lines), items [{ item, qty, amount, patients }], patientCount, totalAmount. %>
+<% const m = (r) => formatMoney(r, cur); %>
+<%- include('top', { title: 'گزارش روزانه‌ی مصرف کالا', params: [formatJalali(day), faDigits(patientCount) + ' بیمار', faDigits(items.length) + ' کالا'], size: 'a4', back: '/print' }) %>
+    <% if (!visits.length) { %>
+    <div class="doc-empty">در این روز کالایی در ویزیت‌ها مصرف نشده است.</div>
+    <% } else { %>
+    <table class="doc-table report-table">
+      <thead><tr><th>کالا</th><th class="num">تعداد</th><th class="num">قیمت واحد</th><th class="num">مبلغ</th></tr></thead>
+      <% visits.forEach((v, i) => { %>
+      <tbody class="report-visit">
+        <tr class="report-head">
+          <td colspan="4">
+            <span class="report-n"><%= faDigits(i + 1) %></span>
+            <span class="mono"><%= v.code %></span> · <b><%= v.first_name %> <%= v.last_name %></b>
+            <span class="report-time"><span class="report-time-label">ساعت</span> <span class="mono"><%= v.visit_time %></span></span>
+            <span class="sub">علت مراجعه: <%= v.reason || '—' %></span>
+          </td>
+        </tr>
+        <% v.lines.forEach((l) => { %>
+        <tr class="report-item">
+          <td><%= l.name %><% if (l.disc) { %><span class="sub">تخفیف ردیف: <span class="money"><%= m(l.disc) %></span></span><% } %></td>
+          <td class="num"><%= faDigits(l.qty) %></td>
+          <td class="num"><span class="money"><%= m(l.override_price ?? l.unit_price) %></span></td>
+          <td class="num"><span class="money"><%= m(l.net) %></span></td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <% }) %>
+    </table>
+
+    <h2>جمع به تفکیک کالا</h2>
+    <table class="doc-table">
+      <thead><tr><th>کالا</th><th class="num">تعداد بیمار</th><th class="num">تعداد مصرف</th><th class="num">مبلغ</th></tr></thead>
+      <tbody>
+        <% items.forEach((r) => { %><tr><td><%= r.item %></td><td class="num"><%= faDigits(r.patients) %></td><td class="num"><%= faDigits(r.qty) %></td><td class="num"><span class="money"><%= m(r.amount) %></span></td></tr><% }) %>
+      </tbody>
+      <tfoot><tr><td colspan="3">جمع مبلغ کالاها</td><td class="num"><span class="money"><%= m(totalAmount) %></span></td></tr></tfoot>
+    </table>
+    <dl class="doc-totals"><div><dt>بیماران با مصرف کالا</dt><dd><%= faDigits(patientCount) %></dd></div><div class="is-main"><dt>مبلغ کل کالاها</dt><dd><%= m(totalAmount) %></dd></div></dl>
+    <% } %>
+    <p class="doc-note">فقط کالاهای انبار در این گزارش هستند، نه خدمات و پرداخت‌ها؛ گزارش کامل در «گزارش کامل روزانه» است. مبلغ پس از تخفیف ردیف است. ویزیت‌های لغوشده حساب نمی‌شوند، چون کالایشان به انبار برگشته است.</p>
+<%- include('bottom') %>

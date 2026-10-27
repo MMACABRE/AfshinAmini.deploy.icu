@@ -1,0 +1,42 @@
+<%# New stock item. Locals: values, errors. %>
+<%
+const v = (k) => values[k] ?? '';
+const field = (name, label, opts = {}) => {
+  const e = errors[name];
+  return '<div class="field' + (opts.span ? ' span-2' : '') + '"><label for="n-' + name + '">' + label + '</label>'
+    + '<input id="n-' + name + '" class="input' + (opts.money ? ' input-money' : '') + '" type="text" name="' + name + '" value="' + String(v(name)).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;') + '"'
+    + (opts.num ? ' inputmode="' + (opts.money ? 'numeric' : 'decimal') + '" dir="ltr"' : '') + (opts.required ? ' required' : '') + (opts.max ? ' maxlength="' + opts.max + '"' : '')
+    + (e ? ' aria-invalid="true" aria-describedby="n-' + name + '-err"' : '') + '>'
+    + (opts.hint ? '<span class="hint">' + opts.hint + '</span>' : '')
+    + (e ? '<p class="field-error" id="n-' + name + '-err" role="alert">' + e + '</p>' : '') + '</div>';
+};
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'کالای جدید', pageCss: 'page-finance' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/storage">انبار</a> / کالای جدید</div>
+      <div class="page-head"><div><h1>کالای جدید</h1><p>کالا به تعداد شمرده می‌شود (هر عدد، نه هر جعبه). موجودی را بعد از ساخت، با «ورود کالا» اضافه کنید.</p></div></div>
+
+      <section class="card">
+        <form class="card-body form-grid" method="post" action="/storage/items">
+          <% if (Object.keys(errors).length) { %><div class="info-box span-2" role="alert">لطفاً خطاهای مشخص‌شده را برطرف کنید.</div><% } %>
+          <%- field('name', 'نام کالا', { span: true, required: true, max: 120 }) %>
+          <%- field('sale_price', 'قیمت فروش هر عدد (' + (cur === 'R' ? 'ریال' : 'تومان') + ')', { num: true, money: true, required: true, hint: 'مبلغی که روی صورتحساب بیمار می‌آید' }) %>
+          <%- field('purchase_cost', 'قیمت خرید هر عدد (اختیاری)', { num: true, money: true, hint: 'فقط برای گزارش؛ هرگز از بیمار گرفته نمی‌شود' }) %>
+          <%- field('low_warn', 'حد هشدار موجودی (اختیاری)', { num: true, hint: 'خالی یعنی حد پیش‌فرض' }) %>
+          <%- field('low_crit', 'حد بحرانی موجودی (اختیاری)', { num: true, hint: 'خالی یعنی حد پیش‌فرض' }) %>
+          <div class="form-actions span-2">
+            <button class="btn btn-primary" type="submit">ساخت کالا</button>
+            <a class="btn btn-ghost" href="/storage">انصراف</a>
+          </div>
+        </form>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>
