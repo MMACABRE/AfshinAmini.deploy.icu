@@ -1,0 +1,62 @@
+<%# Permission editor (D25). Locals: target (user row), perms (clean object), preset (key or null), PRESETS, AREAS,
+    AREA_MAX, AREA_LABELS, LEVEL_LABELS, FLAGS, FLAG_LABELS, notice. Works without JavaScript. %>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'دسترسی‌های ' + target.display_name, pageCss: 'page-admin' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><a href="/admin/users">مدیریت کاربران</a> / <span class="mono"><%= target.username %></span></div>
+          <h1>دسترسی‌های <%= target.display_name %></h1>
+          <p>برای هر بخش یکی از «بدون دسترسی»، «مشاهده» یا «ویرایش» را بگذارید. کارهای حساس جدا تیک می‌خورند و فقط وقتی کار می‌کنند که آن بخش باز باشد.</p>
+        </div>
+      </div>
+
+      <% if (notice) { %><div class="callout callout-info" role="status"><svg class="icon"><use href="#i-check"/></svg><span><%= notice %></span></div><% } %>
+
+      <form method="post" action="/admin/users/<%= target.id %>/permissions" class="stack-lg">
+        <section class="card">
+          <div class="card-body preset-bar">
+            <div class="field">
+              <label for="p-preset">قالب آماده</label>
+              <select id="p-preset" class="select" name="preset">
+                <% Object.entries(PRESETS).forEach(([k, p]) => { %><option value="<%= k %>"<%- preset === k ? ' selected' : '' %>><%= p.label %></option><% }) %>
+              </select>
+            </div>
+            <button class="btn" type="submit" name="apply" value="1">اعمال قالب در فرم</button>
+            <span class="hint">وضعیت فعلی: <b><%= preset ? PRESETS[preset].label : 'سفارشی' %></b></span>
+          </div>
+        </section>
+
+        <div class="perm-grid">
+          <% AREAS.forEach((a) => { const flags = Object.keys(FLAGS).filter((f) => FLAGS[f][0] === a); %>
+          <fieldset class="card perm-card">
+            <legend class="sr-only"><%= AREA_LABELS[a] %></legend>
+            <div class="card-head"><h2 aria-hidden="true"><%= AREA_LABELS[a] %></h2></div>
+            <div class="card-body stack">
+              <div class="levels" role="radiogroup" aria-label="سطح دسترسی <%= AREA_LABELS[a] %>">
+                <% for (let l = 0; l <= AREA_MAX[a]; l += 1) { %>
+                <label class="level"><input type="radio" name="a_<%= a %>" value="<%= l %>"<%- perms[a] === l ? ' checked' : '' %>><span><%= LEVEL_LABELS[l] %></span></label>
+                <% } %>
+              </div>
+              <% flags.forEach((f) => { %>
+              <label class="check"><input type="checkbox" name="f_<%= f %>" value="1"<%- perms.flags.includes(f) ? ' checked' : '' %>><span><%= FLAG_LABELS[f] %> <span class="hint">(نیاز به <%= LEVEL_LABELS[FLAGS[f][1]] %>)</span></span></label>
+              <% }) %>
+            </div>
+          </fieldset>
+          <% }) %>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>ذخیره‌ی دسترسی‌ها</button>
+          <a class="btn btn-ghost" href="/admin/users">بازگشت</a>
+        </div>
+      </form>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

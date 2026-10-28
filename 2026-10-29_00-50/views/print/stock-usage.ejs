@@ -1,0 +1,25 @@
+<%# Items used in a range. Locals: from, to, byPatient, rows, totalQty, totalAmount. %>
+<% const m = (r) => formatMoney(r, cur); %>
+<%- include('top', { title: 'کالاهای مصرف‌شده', params: [formatJalali(from, 'short') + ' تا ' + formatJalali(to, 'short'), byPatient ? 'به تفکیک بیمار' : 'به تفکیک کالا'], size: 'a4', back: '/storage' }) %>
+    <% if (!rows.length) { %>
+    <div class="doc-empty">در این بازه کالایی در ویزیت‌ها مصرف نشده است.</div>
+    <% } else if (byPatient) { %>
+    <table class="doc-table">
+      <thead><tr><th>بیمار</th><th>تاریخ ویزیت</th><th>کالا</th><th class="num">تعداد</th><th class="num">مبلغ</th></tr></thead>
+      <tbody>
+        <% rows.forEach((r) => { %><tr><td><%= r.name %><span class="sub mono"><%= r.code %></span></td><td><%= formatJalali(r.day, 'short') %></td><td><%= r.item %></td><td class="num"><%= faDigits(r.qty) %></td><td class="num"><span class="money"><%= m(r.amount) %></span></td></tr><% }) %>
+      </tbody>
+      <tfoot><tr><td colspan="3">جمع</td><td class="num"><%= faDigits(totalQty) %></td><td class="num"><span class="money"><%= m(totalAmount) %></span></td></tr></tfoot>
+    </table>
+    <% } else { %>
+    <table class="doc-table">
+      <thead><tr><th>کالا</th><th class="num">تعداد</th><th class="num">مبلغ فروش</th></tr></thead>
+      <tbody>
+        <% rows.forEach((r) => { %><tr><td><%= r.item %></td><td class="num"><%= faDigits(r.qty) %></td><td class="num"><span class="money"><%= m(r.amount) %></span></td></tr><% }) %>
+      </tbody>
+      <tfoot><tr><td>جمع</td><td class="num"><%= faDigits(totalQty) %></td><td class="num"><span class="money"><%= m(totalAmount) %></span></td></tr></tfoot>
+    </table>
+    <% } %>
+    <% if (rows.length) { %><dl class="doc-totals"><div><dt>تعداد کل</dt><dd><%= faDigits(totalQty) %></dd></div><div class="is-main"><dt>مبلغ کل</dt><dd><%= m(totalAmount) %></dd></div></dl><% } %>
+    <p class="doc-note">مبلغ پس از تخفیف ردیف است. ویزیت‌های لغوشده حساب نمی‌شوند، چون کالایشان به انبار برگشته است.</p>
+<%- include('bottom') %>

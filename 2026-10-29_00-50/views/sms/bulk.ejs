@@ -1,0 +1,68 @@
+<%# Bulk SMS. Locals: saved (own saved searches), values { saved, text }, error, preview ({ count, skipped, sample, partsEach, partsTotal, balance } | null), ready, BULK_MAX. %>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ارسال گروهی پیامک', pageCss: 'page-sms' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb"><a href="/sms">پیامک</a> / ارسال گروهی</div><h1>ارسال گروهی</h1>
+        <p>پیام برای بیمارانِ یک جستجوی ذخیره‌شده فرستاده می‌شود. نخست پیش‌نمایش را ببینید، سپس تعداد گیرندگان را تأیید کنید. حداکثر <%= faDigits(BULK_MAX) %> گیرنده در هر ارسال.</p></div></div>
+      <%- include('nav', { here: 'bulk' }) %>
+      <% if (!ready.on || !ready.hasKey) { %>
+      <div class="callout mb-4" role="status"><svg class="icon"><use href="#i-alert"/></svg><span><%= !ready.on ? 'پیامک غیرفعال است. آن را از «تنظیمات» روشن کنید.' : 'کلید پیامک ثبت نشده است.' %></span></div>
+      <% } %>
+      <% if (error) { %><div class="callout callout-crit mb-4" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span><%= error %></span></div><% } %>
+
+      <section class="card" aria-labelledby="b-h">
+        <div class="card-head"><h2 id="b-h">گیرندگان و متن</h2></div>
+        <% if (!saved.length) { %>
+        <div class="card-body"><p class="muted">جستجوی ذخیره‌شده‌ای نیست. نخست در <a href="/search">جستجوی پیشرفته</a> یک جستجو را ذخیره کنید.</p></div>
+        <% } else { %>
+        <form class="card-body form-grid" method="post" action="/sms/bulk">
+          <div class="field span-2">
+            <label for="b-saved">جستجوی ذخیره‌شده</label>
+            <select id="b-saved" class="select" name="saved" required>
+              <option value="">انتخاب کنید</option>
+              <% saved.forEach((s) => { %><option value="<%= s.id %>"<%- String(s.id) === String(values.saved) ? ' selected' : '' %>><%= s.name %></option><% }) %>
+            </select>
+          </div>
+          <div class="field span-2 sms-editor">
+            <label for="b-text">متن پیام</label>
+            <textarea id="b-text" class="textarea" name="text" rows="4" maxlength="500" dir="rtl" required data-sms-template data-sms-free><%= values.text %></textarea>
+            <span class="hint">برای گذاشتن نام هر بیمار {نام} را بنویسید. اطلاعات پزشکی در پیام ننویسید.</span>
+            <span class="sms-count" data-sms-count aria-live="polite"></span>
+          </div>
+          <div class="form-actions span-2"><button class="btn btn-primary" type="submit">پیش‌نمایش</button></div>
+        </form>
+        <% } %>
+      </section>
+
+      <% if (preview) { %>
+      <section class="card mt-6" aria-labelledby="p-h">
+        <div class="card-head"><h2 id="p-h">پیش‌نمایش</h2></div>
+        <div class="card-body stack">
+          <dl class="sms-facts">
+            <div><dt>گیرندگان</dt><dd><b><%= faDigits(preview.count) %></b> نفر</dd></div>
+            <div><dt>ردشده</dt><dd>
+              پیامک نمی‌خواهند <%= faDigits(preview.skipped.optout) %> · بایگانی‌شده <%= faDigits(preview.skipped.archived) %> · شماره‌ی نامعتبر <%= faDigits(preview.skipped.phone) %> · شماره‌ی تکراری <%= faDigits(preview.skipped.duplicate) %>
+            </dd></div>
+            <div><dt>بخش‌های هر پیام</dt><dd><%= faDigits(preview.partsEach) %> (جمع <%= faDigits(preview.partsTotal) %> بخش)</dd></div>
+            <% if (preview.balance !== '') { %><div><dt>اعتبار فعلی</dt><dd><%= faDigits(Math.floor(Number(preview.balance))) %> پیام</dd></div><% } %>
+          </dl>
+          <p class="sms-sample">نمونه: <span><%= preview.sample %></span></p>
+          <form class="inline-form" method="post" action="/sms/bulk/confirm">
+            <input type="hidden" name="saved" value="<%= values.saved %>">
+            <input type="hidden" name="text" value="<%= values.text %>">
+            <label for="b-count">برای تأیید، تعداد گیرندگان را دوباره بنویسید</label>
+            <input id="b-count" class="input" type="text" name="confirm_count" inputmode="numeric" dir="ltr" autocomplete="off" required>
+            <button class="btn btn-primary" type="submit">ارسال به صف</button>
+          </form>
+        </div>
+      </section>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

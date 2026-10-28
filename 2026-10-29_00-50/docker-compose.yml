@@ -1,0 +1,46 @@
+# Two services: the app (never exposed directly) and Caddy (HTTPS, the only thing the internet reaches).
+# Start: docker compose up -d --build        Logs: docker compose logs -f app
+# A fixed project name keeps the same containers and the certificate volume when the code moves to a new
+# release folder (otherwise Compose would name them after the folder and start a second, empty stack).
+name: clinic
+
+services:
+  app:
+    build: .
+    restart: unless-stopped
+    # The app is an ordinary non-root process on port 3000: it needs no Linux capabilities and must never gain any.
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      TZ: ${TZ:-Asia/Tehran}   # the nightly backup runs at 03:00 in this time zone
+    volumes:
+      # Database, patient files and backups; this folder is what you back up. On the server DATA_PATH points
+      # outside every release folder (see .env.example), so a new release never starts with empty data.
+      - ${DATA_PATH:-./data}:/app/data
+    expose:
+      - "3000"
+    logging: &logs
+      driver: json-file
+      options: { max-size: "10m", max-file: "5" }
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    depends_on:
+      app:
+        condition: service_healthy
+    environment:
+      DOMAIN: ${DOMAIN:?Set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data        # certificates; losing this only means a new certificate is requested
+      - caddy_config:/config
+    logging: *logs
+
+volumes:
+  caddy_data:
+  caddy_config:
