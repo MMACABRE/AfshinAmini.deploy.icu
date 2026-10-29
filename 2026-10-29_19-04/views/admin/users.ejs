@@ -1,0 +1,99 @@
+<%
+const esc = (s) => String(s ?? '');
+const v = (k) => esc(values[k]);
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'مدیریت کاربران', pageCss: 'page-admin' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">User Management</span></div>
+          <h1>مدیریت کاربران</h1>
+          <p>کاربران را بسازید، دسترسی هر نفر را تنظیم کنید، رمزشان را عوض کنید یا حسابشان را ببندید. ثبت‌نام عمومی وجود ندارد.</p>
+        </div>
+        <% if (has('manage_users')) { %><a class="btn btn-danger" href="/admin/wipe"><svg class="icon"><use href="#i-trash"/></svg>حذف داده‌ها</a><% } %>
+      </div>
+
+      <% if (notice) { %><div class="callout callout-info" role="status"><svg class="icon"><use href="#i-check"/></svg><span><%= notice %></span></div><% } %>
+      <% if (error) { %><div class="info-box" role="alert"><%= error %></div><% } %>
+
+      <% if (has('manage_users')) { %>
+      <section class="card" aria-labelledby="new-h">
+        <div class="card-head"><h2 id="new-h">کاربر جدید</h2></div>
+        <form class="card-body stack-lg" method="post" action="/admin/users" autocomplete="off">
+          <div class="form-grid">
+            <div class="field">
+              <label for="u-name">نام کاربری</label>
+              <input id="u-name" class="input" type="text" name="username" value="<%= v('username') %>" dir="ltr" maxlength="32" required autocomplete="off">
+              <span class="hint">۳ تا ۳۲ نویسه‌ی لاتین، عدد، نقطه، خط تیره یا زیرخط</span>
+            </div>
+            <div class="field">
+              <label for="u-display">نام نمایشی</label>
+              <input id="u-display" class="input" type="text" name="display_name" value="<%= v('display_name') %>" maxlength="80" required>
+            </div>
+            <div class="field">
+              <label for="u-preset">قالب دسترسی</label>
+              <select id="u-preset" class="select" name="preset">
+                <% Object.entries(PRESETS).reverse().forEach(([k, p]) => { %><option value="<%= k %>"<%- (values.preset || 'staff') === k ? ' selected' : '' %>><%= p.label %></option><% }) %>
+              </select>
+              <span class="hint">بعد از ساخت، از «دسترسی‌ها» می‌توانید جزئیات را تغییر دهید.</span>
+            </div>
+            <div class="field">
+              <label for="u-pass">رمز عبور</label>
+              <input id="u-pass" class="input" type="password" name="password" dir="ltr" minlength="10" maxlength="256" required autocomplete="new-password">
+              <span class="hint">دست‌کم ۱۰ نویسه</span>
+            </div>
+          </div>
+          <div><button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-plus"/></svg>ساخت کاربر</button></div>
+        </form>
+      </section>
+      <% } %>
+
+      <section class="card mt-6" aria-labelledby="list-h">
+        <div class="card-head"><div><h2 id="list-h">کاربران</h2><p><%= faDigits(users.length) %> کاربر</p></div></div>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">کاربر</th><th scope="col">دسترسی</th><th scope="col">وضعیت</th><th scope="col">تاریخ ساخت</th><% if (has('manage_users')) { %><th scope="col">رمز جدید</th><th scope="col"><span class="sr-only">اقدام</span></th><% } %></tr></thead>
+            <tbody>
+              <% users.forEach((u) => { %>
+              <tr>
+                <td data-label="کاربر"><b><%= u.display_name %></b><br><span class="mono text-xs-subtle"><%= u.username %></span></td>
+                <td data-label="دسترسی"><span class="chip <%= u.is_owner ? 'chip-info' : 'chip-plain' %>"><%= u.label %></span></td>
+                <td data-label="وضعیت"><span class="chip <%= u.active ? 'chip-ok' : 'chip-mute' %>"><%= u.active ? 'فعال' : 'غیرفعال' %></span></td>
+                <td data-label="تاریخ ساخت"><%= formatJalali(localDay(u.created_at), 'short') %></td>
+                <% if (has('manage_users')) { %>
+                <td data-label="رمز جدید">
+                  <% if (!u.is_owner || user.owner) { %>
+                  <form class="flex-row" method="post" action="/admin/users/<%= u.id %>/password" autocomplete="off">
+                    <input class="input" type="password" name="password" dir="ltr" minlength="10" maxlength="256" placeholder="رمز جدید" aria-label="رمز جدید برای <%= u.username %>" required autocomplete="new-password">
+                    <button class="btn btn-sm" type="submit">تنظیم</button>
+                  </form>
+                  <% } else { %><span class="muted">فقط خود مالک</span><% } %>
+                </td>
+                <td data-label="اقدام">
+                  <% if (u.id !== user.id && !u.is_owner) { %>
+                  <div class="user-actions">
+                    <a class="btn btn-sm" href="/admin/users/<%= u.id %>/permissions"><svg class="icon"><use href="#i-key"/></svg>دسترسی‌ها</a>
+                    <form method="post" action="/admin/users/<%= u.id %>/<%= u.active ? 'deactivate' : 'activate' %>">
+                      <button class="btn btn-sm<%= u.active ? '' : ' btn-primary' %>" type="submit"><%= u.active ? 'غیرفعال‌سازی' : 'فعال‌سازی' %></button>
+                    </form>
+                    <%- include('../partials/confirm-delete', { action: '/admin/users/' + u.id + '/delete', question: 'حساب «' + u.display_name + '» برای همیشه حذف شود؟ سوابق فعالیت او می‌ماند.' }) %>
+                  </div>
+                  <% } else { %><span class="muted"><%= u.id === user.id ? 'حساب شما' : 'مالک سامانه' %></span><% } %>
+                </td>
+                <% } %>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

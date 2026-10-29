@@ -1,0 +1,37 @@
+<%# Visit bill, A5. Locals: visit (with patient fields), number, bill. %>
+<%
+const m = (r) => formatMoney(r, cur);
+const KIND = { payment: 'پرداخت', refund: 'بازپرداخت', move_out: 'انتقال به ویزیت دیگر', move_in: 'انتقال از ویزیت دیگر' };
+%>
+<%- include('top', { title: 'صورتحساب ویزیت', params: [formatJalali(visit.visit_date), number ? 'ویزیت ' + faDigits(number) : 'لغوشده'], size: 'a5', back: '/visits/' + visit.id }) %>
+    <div class="doc-kv">
+      <div><b>بیمار:</b> <span><%= visit.first_name %> <%= visit.last_name %></span></div>
+      <div><b>کد:</b> <span class="mono"><%= visit.code %></span></div>
+      <div><b>ساعت:</b> <span class="mono"><%= visit.visit_time %></span></div>
+    </div>
+    <% if (!bill.lines.length) { %>
+    <div class="doc-empty">ردیفی در این صورتحساب نیست.</div>
+    <% } else { %>
+    <table class="doc-table">
+      <thead><tr><th>شرح</th><th class="num">تعداد</th><th class="num">قیمت واحد</th><th class="num">تخفیف</th><th class="num">مبلغ</th></tr></thead>
+      <tbody>
+        <% bill.lines.forEach((l) => { %>
+        <tr><td><%= l.name %></td><td class="num"><%= faDigits(l.qty) %></td><td class="num"><span class="money"><%= m(l.override_price ?? l.unit_price) %></span></td><td class="num"><%- l.disc ? '<span class="money">' + m(l.disc) + '</span>' : '—' %></td><td class="num"><span class="money"><%= m(l.net) %></span></td></tr>
+        <% }) %>
+      </tbody>
+    </table>
+    <% } %>
+    <dl class="doc-totals">
+      <div><dt>جمع کل</dt><dd><%= m(bill.gross) %></dd></div>
+      <div><dt>تخفیف</dt><dd><%= m(bill.discount) %></dd></div>
+      <div><dt>پرداخت‌شده</dt><dd><%= m(bill.paid) %></dd></div>
+      <div class="is-main"><dt><%= bill.credit ? 'بستانکار' : 'مانده' %></dt><dd><%= m(bill.credit || bill.remaining) %></dd></div>
+    </dl>
+    <% if (bill.payments.length) { %>
+    <h2>پرداخت‌ها</h2>
+    <table class="doc-table">
+      <tbody><% bill.payments.forEach((p) => { %><tr><td><%= formatJalali(p.paid_on, 'short') %></td><td><%= KIND[p.kind] %></td><td><%= p.method || '' %></td><td class="num"><span class="money"><%= m(p.amount) %></span></td></tr><% }) %></tbody>
+    </table>
+    <% } %>
+    <% if (bill.cancelled) { %><p class="doc-note">این ویزیت لغو شده است و بدهی ندارد.</p><% } %>
+<%- include('bottom') %>

@@ -1,0 +1,72 @@
+<%# Daily visit report (D38). Locals: day, visits (each with bill), byAccount [[account, amount]], accountTotal, totals. %>
+<%
+const m = (r) => formatMoney(r, cur);
+const PAY = { payment: 'پرداخت', refund: 'بازپرداخت', move_in: 'انتقال از ویزیت', move_out: 'انتقال به ویزیت' };
+%>
+<%- include('top', { title: 'گزارش کامل روزانه', params: [formatJalali(day), 'بر اساس روز ویزیت', faDigits(visits.length) + ' ویزیت'], size: 'a4', bodyClass: 'print-report', back: '/print' }) %>
+    <% if (!visits.length) { %>
+    <div class="doc-empty">در این روز ویزیتی ثبت نشده است.</div>
+    <% } else { %>
+    <table class="doc-table report-table">
+      <thead><tr><th>شرح</th><th class="num">تعداد</th><th class="num">قیمت واحد</th><th class="num">مبلغ</th></tr></thead>
+      <% visits.forEach((v, i) => { const b = v.bill; %>
+      <tbody class="report-visit">
+        <tr class="report-head">
+          <td colspan="4">
+            <span class="report-n"><%= faDigits(i + 1) %></span>
+            <span class="mono"><%= v.code %></span> · <b><%= v.first_name %> <%= v.last_name %></b>
+            <span class="report-time"><span class="report-time-label">ساعت</span> <span class="mono"><%= v.visit_time %></span></span>
+            <span class="report-reason">علت مراجعه: <%= v.reason || '—' %></span>
+          </td>
+        </tr>
+        <% if (!b.lines.length) { %>
+        <tr><td colspan="4" class="report-muted">خدمت یا کالایی ثبت نشده است.</td></tr>
+        <% } %>
+        <% b.lines.forEach((l) => { %>
+        <tr<%- l.kind === 'item' ? ' class="report-item"' : '' %>>
+          <td><%= l.name %> <span class="report-kind"><%= l.kind === 'item' ? 'کالا' : 'خدمت' %></span><% if (l.disc) { %><span class="sub">تخفیف ردیف: <span class="money"><%= m(l.disc) %></span></span><% } %></td>
+          <td class="num"><%= faDigits(l.qty) %></td>
+          <td class="num"><span class="money"><%= m(l.override_price ?? l.unit_price) %></span></td>
+          <td class="num"><span class="money"><%= m(l.net) %></span></td>
+        </tr>
+        <% }) %>
+        <% if (b.billDisc) { %>
+        <tr><td colspan="3">تخفیف کل صورتحساب</td><td class="num"><span class="money neg"><%= m(-b.billDisc) %></span></td></tr>
+        <% } %>
+        <%# One settlement row per visit: what was owed, each payment with its method, account and amount, then what is left. %>
+        <tr class="report-owed">
+          <td colspan="3"><div class="report-settle">
+            <b>قابل پرداخت</b>
+            <% if (!b.payments.length) { %><span class="report-muted">پرداختی ثبت نشده است.</span><% } %>
+            <% b.payments.forEach((p) => { %>
+            <span class="report-pay"><%= PAY[p.kind] %><% if (p.kind === 'move_in' || p.kind === 'move_out') { %> <%= p.other_date ? formatJalali(p.other_date, 'short') : '' %><% } else { %> · <%= p.method || '—' %> · <%= p.account || '—' %><% } %><% if (p.paid_on !== day) { %> <span class="report-date">(<%= formatJalali(p.paid_on, 'short') %>)</span><% } %> <span class="money<%= p.amount < 0 ? ' neg' : '' %>"><%= m(p.amount) %></span></span>
+            <% }) %>
+            <% if (b.credit || b.remaining) { %><span class="report-rest"><%= b.credit ? 'بستانکار' : 'مانده' %> <span class="money"><%= m(b.credit || b.remaining) %></span></span><% } %>
+          </div></td>
+          <td class="num"><span class="money"><%= m(b.owed) %></span></td>
+        </tr>
+      </tbody>
+      <% }) %>
+    </table>
+
+    <div class="report-sums">
+    <div>
+    <h2>جمع به تفکیک حساب</h2>
+    <table class="doc-table">
+      <tbody>
+        <% byAccount.forEach(([k, n]) => { %><tr><td><%= k %></td><td class="num"><span class="money<%= n < 0 ? ' neg' : '' %>"><%= m(n) %></span></td></tr><% }) %>
+        <% if (!byAccount.length) { %><tr><td colspan="2" class="report-muted">برای ویزیت‌های این روز پرداختی ثبت نشده است.</td></tr><% } %>
+      </tbody>
+      <% if (byAccount.length) { %><tfoot><tr><td>جمع حساب‌ها</td><td class="num"><span class="money"><%= m(accountTotal) %></span></td></tr></tfoot><% } %>
+    </table>
+    </div>
+    <dl class="doc-totals">
+      <div><dt>جمع قابل پرداخت</dt><dd><%= m(totals.owed) %></dd></div>
+      <div><dt>جمع مانده</dt><dd><%= m(totals.remaining) %></dd></div>
+      <% if (totals.credit) { %><div><dt>جمع بستانکار</dt><dd><%= m(totals.credit) %></dd></div><% } %>
+      <div class="is-main"><dt>جمع پرداخت‌شده</dt><dd><%= m(totals.paid) %></dd></div>
+    </dl>
+    </div>
+    <% } %>
+    <p class="doc-note">ردیف‌های رنگی کالا هستند (از انبار)؛ ردیف‌های ساده خدمت‌اند. این گزارش بر اساس روز ویزیت است: پرداخت هر ویزیت، حتی اگر روز دیگری انجام شده باشد (مثل پیش‌پرداخت)، زیر همان ویزیت می‌آید و تاریخش در پرانتز است. انتقال اعتبار بین ویزیت‌ها حساب ندارد و در جمع حساب‌ها نمی‌آید. درآمد خود همین روز در «گزارش مالی روزانه» است.</p>
+<%- include('bottom') %>
