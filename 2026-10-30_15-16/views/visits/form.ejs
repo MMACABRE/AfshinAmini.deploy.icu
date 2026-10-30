@@ -1,0 +1,75 @@
+<%
+const v = (n) => (values && values[n] != null ? values[n] : '');
+const err = (n) => errors[n];
+const full = patient.first_name + ' ' + patient.last_name;
+const action = visit ? '/visits/' + visit.id : '/patients/' + patient.code + '/visits';
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: visit ? 'ویرایش ویزیت' : 'ویزیت جدید', pageCss: 'page-visits' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/visits" lang="en">Visits</a> / <%= visit ? 'ویرایش' : 'جدید' %></div>
+      <div class="page-head"><div><h1><%= visit ? 'ویرایش ویزیت' : 'ثبت ویزیت' %></h1>
+        <p><a href="/patients/<%= patient.code %>"><%= full %></a> · <span class="mono"><%= patient.code %></span></p></div></div>
+
+      <section class="card">
+        <form class="card-body form-grid" method="post" action="<%= action %>">
+          <input type="hidden" name="back" value="<%= back %>">
+          <div class="field">
+            <label for="f-date">تاریخ</label>
+            <input id="f-date" class="input" type="text" name="visit_date" value="<%= v('visit_date') %>" placeholder="۱۴۰۳/۰۵/۱۲" inputmode="numeric" dir="ltr" data-jalali required<%- err('visit_date') ? ' aria-invalid="true" aria-describedby="f-date-err"' : '' %>>
+            <% if (err('visit_date')) { %><p class="field-error" id="f-date-err" role="alert"><%= err('visit_date') %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="f-time">ساعت</label>
+            <input id="f-time" class="input" type="text" name="visit_time" value="<%= v('visit_time') %>" placeholder="۰۹:۳۰" inputmode="numeric" dir="ltr" maxlength="5" required<%- err('visit_time') ? ' aria-invalid="true" aria-describedby="f-time-err"' : '' %>>
+            <% if (err('visit_time')) { %><p class="field-error" id="f-time-err" role="alert"><%= err('visit_time') %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="f-duration">مدت ویزیت</label>
+            <select id="f-duration" class="select" name="duration_min"<%- err('duration_min') ? ' aria-invalid="true" aria-describedby="f-duration-err"' : '' %>>
+              <% DURATIONS.forEach((m) => { %>
+              <option value="<%= m %>"<%- Number(v('duration_min') || 15) === m ? ' selected' : '' %>><%= faDigits(m) %> دقیقه</option>
+              <% }) %>
+            </select>
+            <% if (err('duration_min')) { %><p class="field-error" id="f-duration-err" role="alert"><%= err('duration_min') %></p><% } %>
+          </div>
+          <div class="field">
+            <label for="f-status">وضعیت</label>
+            <select id="f-status" class="select" name="status">
+              <% [['scheduled', 'برنامه‌ریزی‌شده'], ['done', 'انجام‌شده'], ['cancelled', 'لغو‌شده']].forEach(([k, l]) => { %>
+              <option value="<%= k %>"<%- (v('status') || 'scheduled') === k ? ' selected' : '' %>><%= l %></option>
+              <% }) %>
+            </select>
+          </div>
+          <div class="field">
+            <label for="f-reason">شرح ویزیت</label>
+            <input id="f-reason" class="input" type="text" name="reason" value="<%= v('reason') %>" maxlength="200" placeholder="مثلاً: کنترل فشار خون">
+          </div>
+          <% if (smsOn) { %>
+          <div class="field">
+            <label for="f-lead">یادآوری پیامکی</label>
+            <select id="f-lead" class="select" name="reminder_lead">
+              <option value=""<%- !v('reminder_lead') ? ' selected' : '' %>>پیش‌فرض کلینیک (<%= labels.LEADS[smsDefaultLead] %>)</option>
+              <% Object.entries(labels.LEADS).forEach(([k, l]) => { %><option value="<%= k %>"<%- v('reminder_lead') === k ? ' selected' : '' %>><%= l %></option><% }) %>
+            </select>
+          </div>
+          <% } %>
+          <div class="field span-2">
+            <label for="f-notes">یادداشت</label>
+            <textarea id="f-notes" class="textarea" name="notes" rows="3" maxlength="1000"><%= v('notes') %></textarea>
+          </div>
+          <div class="form-actions span-2">
+            <button class="btn btn-primary" type="submit">ذخیره</button>
+            <a class="btn btn-ghost" href="<%= back && back !== 'profile' ? back : '/patients/' + patient.code + '#visits' %>">انصراف</a>
+          </div>
+        </form>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

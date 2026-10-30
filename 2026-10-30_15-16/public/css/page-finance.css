@@ -1,0 +1,143 @@
+/* Storage, finance, visit bill and payments (D26-D29). Builds on tokens and components; logical properties only. */
+.mt-3 { margin-top: var(--sp-3); }
+.mt-6 { margin-top: var(--sp-6); }
+.mb-4 { margin-bottom: var(--sp-4); }
+.text-xs-muted { font-size: var(--fs-xs); color: var(--text-3); }
+.page-head + .callout, .page-head + .info-box { margin-bottom: var(--sp-5); }
+
+/* Money and counts: Latin digits read left to right inside RTL text. */
+.money { font-family: var(--font-mono); direction: ltr; unicode-bidi: isolate; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.money-strike { text-decoration: line-through; color: var(--text-3); font-size: var(--fs-xs); margin-inline-end: var(--sp-1); }
+.input-money { font-family: var(--font-mono); direction: ltr; text-align: start; }
+.num-lg { font: 600 var(--fs-lg)/1 var(--font-head); }
+.qty { font-weight: 600; font-variant-numeric: tabular-nums; }
+.qty-in { color: var(--ok-fg); }
+.qty-out { color: var(--crit-fg); }
+.row-mute td { color: var(--text-3); }
+
+.empty-state { display: flex; flex-direction: column; align-items: center; gap: var(--sp-3); padding-block: var(--sp-7); text-align: center; color: var(--text-2); }
+.empty-state > .icon { width: 36px; height: 36px; color: var(--accent-text); }
+
+.form-grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.form-grid .span-all { grid-column: 1 / -1; }
+
+/* Storage */
+.stock-total { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: var(--sp-3) var(--sp-5); border-radius: var(--radius-lg); background: var(--accent-tint); color: var(--accent-text); min-width: 120px; }
+.stock-total span, .stock-total small { font-size: var(--fs-xs); }
+.stock-total b { font: 700 var(--fs-2xl)/1.1 var(--font-head); }
+.lot-fix > summary { list-style: none; }
+.lot-fix > summary::-webkit-details-marker { display: none; }
+.lot-fix-body { display: flex; flex-direction: column; gap: var(--sp-2); padding-top: var(--sp-2); min-width: 220px; }
+.lot-form { display: flex; gap: var(--sp-2); flex-wrap: wrap; }
+.lot-form .input { flex: 1 1 90px; min-width: 0; }
+
+/* Visit page (D27) */
+.visit-head .meta { display: flex; gap: var(--sp-2) var(--sp-4); flex-wrap: wrap; align-items: center; font-size: var(--fs-sm); margin-top: var(--sp-2); }
+.visit-head h1 a { color: inherit; }
+.head-actions { display: flex; gap: var(--sp-2); flex-wrap: wrap; align-items: flex-start; }
+.notes-box { padding: var(--sp-4); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-2); font-size: var(--fs-sm); color: var(--text-2); line-height: 1.7; white-space: pre-line; }
+
+.add-line { display: flex; align-items: flex-end; gap: var(--sp-3); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); background: var(--accent-tint); background: color-mix(in srgb, var(--accent-tint) 45%, var(--surface)); }
+.add-line .grow { flex: 1 1 280px; min-width: 0; }
+.qty-field { flex: 0 0 96px; }
+.add-line-error { flex-basis: 100%; }
+/* The owner's prominent green «افزودن» (D27). */
+.btn-add {
+  height: 48px; padding: 0 var(--sp-6); border-radius: var(--radius); font: 700 var(--fs-md)/1 var(--font-head); color: #fff;
+  background: linear-gradient(160deg, #3f9a5c 0%, #2c7a46 100%); border: 0;
+  box-shadow: 0 10px 24px -12px #2c7a46, inset 0 1px 0 rgba(255, 255, 255, .18);
+}
+.btn-add:hover { background: linear-gradient(160deg, #46a866 0%, #2f844c 100%); color: #fff; }
+.btn-add .icon { width: 20px; height: 20px; stroke-width: 2.4; }
+
+.line-edit > summary { list-style: none; }
+.line-edit > summary::-webkit-details-marker { display: none; }
+.line-edit-body { display: flex; flex-direction: column; gap: var(--sp-2); padding-top: var(--sp-2); min-width: 260px; }
+.inline-form { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.inline-form .input { flex: 1 1 110px; min-width: 0; width: auto; }
+.select-sm { width: auto; flex: 0 1 auto; }
+
+.bill-foot { display: flex; justify-content: space-between; align-items: flex-start; gap: var(--sp-5); flex-wrap: wrap; border-top: 1px solid var(--border-subtle); }
+.bill-foot > .inline-form { flex: 1 1 320px; }
+.bill-foot > .inline-form > label { font-size: var(--fs-sm); font-weight: 500; }
+.totals { margin: 0; min-width: 280px; flex: 0 1 360px; display: flex; flex-direction: column; gap: 2px; padding: var(--sp-3) var(--sp-4); border-radius: var(--radius-lg); background: var(--surface-2); }
+.totals > div { display: flex; justify-content: space-between; align-items: baseline; gap: var(--sp-4); padding-block: 6px; }
+.totals dt { color: var(--text-2); font-size: var(--fs-sm); }
+.totals dd { margin: 0; }
+.totals-strong { border-top: 1px solid var(--border); margin-top: var(--sp-1); }
+.totals-strong dt, .totals-strong dd { font-weight: 700; color: var(--text); }
+.totals-remaining dd .money { font-size: var(--fs-lg); font-weight: 700; color: var(--crit-fg); }
+.totals-remaining.is-zero dd .money { color: var(--ok-fg); }
+.totals-credit { background: var(--info-bg); border-radius: var(--radius-sm); padding-inline: var(--sp-2); }
+.totals-credit dt, .totals-credit dd .money { color: var(--info-fg); font-weight: 700; }
+
+.pay-form { border-top: 1px solid var(--border-subtle); }
+.pay-form h3, .credit-forms h3 { font-size: var(--fs-md); }
+.credit-box { border-top: 1px solid var(--border-subtle); display: flex; flex-direction: column; gap: var(--sp-4); }
+.credit-forms { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); }
+
+/* Finance tab (D29) */
+.sub-nav { flex-wrap: wrap; }
+.sub-nav a, .sub-nav span { padding: 8px 16px; }
+.stat .stat-value.fin-value, .grid > .card.stat .stat-value.fin-value { font-size: var(--fs-2xl); letter-spacing: -.02em; }
+.fin-value .money { font-family: var(--font-mono); }
+.fin-due .money { color: var(--crit-fg); }
+.text-xl { font-size: var(--fs-xl); }
+.stat-value.text-xl { font-size: var(--fs-xl); }
+.chart-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--sp-5); }
+.chart-card .card-body { min-width: 0; }
+.chart-sub h3 { font-size: var(--fs-sm); color: var(--text-2); margin-bottom: var(--sp-2); }
+.chart { display: block; width: 100%; height: auto; overflow: visible; }
+.chart .ch-grid { stroke: var(--border); stroke-width: 1; stroke-dasharray: 3 4; }
+.chart .ch-axis, .chart .ch-label, .chart .ch-value { fill: var(--text-3); font: 500 11px var(--font-body); }
+.chart .ch-value { fill: var(--text-2); font-family: var(--font-mono); }
+.chart .ch-label { fill: var(--text-2); }
+.chart .ch-bar { fill: var(--accent-line); }
+.chart .ch-bar-hi { fill: var(--accent); }
+.chart .ch-bar:hover { fill: var(--accent-hover); }
+.filter-bar { display: flex; align-items: flex-end; gap: var(--sp-3); flex-wrap: wrap; }
+.filter-bar .field { flex: 1 1 140px; }
+.filter-bar .filter-go { flex: 0 0 auto; }
+.pick-list { list-style: none; margin: 0; padding: 0 0 var(--sp-3); }
+.pick-list a { display: flex; align-items: center; gap: var(--sp-4); min-height: 48px; padding: 0 var(--pad); border-top: 1px solid var(--border-subtle); color: var(--text); flex-wrap: wrap; }
+.pick-list a:hover { background: var(--accent-tint); text-decoration: none; }
+.pick-list .mono { color: var(--text-3); font-size: var(--fs-sm); }
+.pay-patient { display: flex; align-items: center; gap: var(--sp-3); flex-wrap: wrap; font-size: var(--fs-lg); }
+.pay-visit + .pay-visit { margin-top: var(--sp-4); }
+.pay-visit.is-chosen { border-color: var(--accent-line); box-shadow: 0 0 0 3px var(--accent-tint); }
+.pay-visit h2 a { color: inherit; }
+.edit-list { list-style: none; margin: 0; padding: var(--sp-2) var(--pad); display: flex; flex-direction: column; }
+.edit-list > li { display: flex; align-items: center; gap: var(--sp-2); padding-block: var(--sp-2); border-bottom: 1px solid var(--border-subtle); flex-wrap: wrap; }
+.edit-list > li > .inline-form { flex: 1 1 260px; }
+.add-entry { border-top: 1px solid var(--border-subtle); }
+.add-entry h3 { font-size: var(--fs-md); }
+.currency-field { border: 0; margin: 0; padding: 0; }
+.currency-field .levels { max-width: 360px; }
+.levels { display: flex; flex-wrap: wrap; gap: 2px; padding: 3px; background: var(--surface-2); border-radius: var(--radius-sm); }
+.level { flex: 1; min-width: 0; position: relative; }
+.level input { position: absolute; opacity: 0; inset: 0; margin: 0; }
+.level span { display: block; text-align: center; padding: 8px 10px; border-radius: 6px; font-size: var(--fs-sm); font-weight: 500; color: var(--text-2); cursor: pointer; }
+.level input:checked + span { background: var(--raised); color: var(--accent-text); box-shadow: var(--shadow-sm); }
+.level input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+/* «سوابق درمان و مالی» */
+.history-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sp-4); margin-bottom: var(--sp-5); }
+.history-visit + .history-visit { margin-top: var(--sp-5); }
+.history-visit .card-head h2 a { color: inherit; }
+
+@media (max-width: 900px) {
+  .form-grid-3 { grid-template-columns: minmax(0, 1fr); }
+  .stock-total { flex-direction: row; gap: var(--sp-2); }
+  .add-line .btn-add { flex: 1 1 100%; }
+  .totals { flex-basis: 100%; min-width: 0; }
+  .credit-forms { grid-template-columns: minmax(0, 1fr); }
+  .history-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .chart-grid, .lists-grid, .fin-figures { grid-template-columns: minmax(0, 1fr); }
+  .level span { padding-block: 12px; }
+}
+
+/* Terracotta in the money pages: the highlighted bar (today, this month, top seller) and the add-line band. */
+.chart .ch-bar-hi { fill: var(--terra); }
+.chart .ch-bar-hi:hover { fill: var(--terra-deep); }
+.add-line { background: linear-gradient(to left, color-mix(in srgb, var(--accent-tint) 45%, var(--surface)) 40%, color-mix(in srgb, var(--terra-tint) 55%, var(--surface))); }
+.stock-total { background: linear-gradient(135deg, var(--accent-tint) 35%, var(--terra-tint) 100%); }
