@@ -1,0 +1,19 @@
+<%# Live clock (D24). Locals: clock = { h, m, s, jalali, greg } rendered on the server for the first paint; app.js
+    enhanceClock() then ticks every second from the browser clock. The digit boxes are decoration (aria-hidden);
+    the sr-only line carries the time for screen readers and is refreshed once a minute, not every second. %>
+<%
+const digit = (c) => '<span class="seg" data-n="' + c + '"><i class="a"></i><i class="b"></i><i class="c"></i><i class="d"></i><i class="e"></i><i class="f"></i><i class="g"></i></span>';
+%>
+<section class="clock-card" data-clock aria-label="ساعت و تاریخ">
+  <div class="clock-time" aria-hidden="true">
+    <span class="clock-group" data-part="h"><%- digit(clock.h[0]) %><%- digit(clock.h[1]) %></span>
+    <span class="clock-colon"><i></i><i></i></span>
+    <span class="clock-group" data-part="m"><%- digit(clock.m[0]) %><%- digit(clock.m[1]) %></span>
+    <span class="clock-group clock-sec" data-part="s"><%- digit(clock.s[0]) %><%- digit(clock.s[1]) %></span>
+  </div>
+  <span class="sr-only" data-clock-sr><%= faDigits(clock.h + ':' + clock.m) %></span>
+  <div class="clock-dates">
+    <span class="clock-jalali" data-clock-jalali><%= clock.jalali %></span>
+    <span class="clock-greg" data-clock-greg lang="en"><%= clock.greg %></span>
+  </div>
+</section>

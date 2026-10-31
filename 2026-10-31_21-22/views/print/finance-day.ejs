@@ -1,0 +1,31 @@
+<%# Daily finance report. Locals: day, rows, total, byMethod, byAccount, clinic, generated, by. %>
+<% const m = (r) => formatMoney(r, cur); %>
+<%- include('top', { title: 'گزارش مالی روزانه', params: [formatJalali(day), 'درآمد بر اساس روز پرداخت'], size: 'a4', back: '/finance' }) %>
+    <% if (!rows.length) { %>
+    <div class="doc-empty">در این روز پرداختی ثبت نشده است.</div>
+    <% } else { %>
+    <table class="doc-table">
+      <thead><tr><th>#</th><th>بیمار</th><th>ویزیت</th><th>نوع</th><th>روش</th><th>حساب</th><th class="num">مبلغ</th></tr></thead>
+      <tbody>
+        <% rows.forEach((r, i) => { %>
+        <tr>
+          <td><%= faDigits(i + 1) %></td>
+          <td><%= r.first_name %> <%= r.last_name %><span class="sub mono"><%= r.code %></span></td>
+          <td><%= formatJalali(r.visit_date, 'short') %></td>
+          <td><%= r.kind === 'refund' ? 'بازپرداخت' : (r.visit_date > day ? 'پیش‌پرداخت' : 'پرداخت') %></td>
+          <td><%= r.method || '—' %></td>
+          <td><%= r.account || '—' %></td>
+          <td class="num"><span class="money<%= r.amount < 0 ? ' neg' : '' %>"><%= m(r.amount) %></span></td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <tfoot><tr><td colspan="6">درآمد خالص روز</td><td class="num"><span class="money"><%= m(total) %></span></td></tr></tfoot>
+    </table>
+    <h2>جمع به تفکیک روش پرداخت</h2>
+    <table class="doc-table"><tbody><% byMethod.forEach(([k, v]) => { %><tr><td><%= k %></td><td class="num"><span class="money"><%= m(v) %></span></td></tr><% }) %></tbody></table>
+    <h2>جمع به تفکیک حساب</h2>
+    <table class="doc-table"><tbody><% byAccount.forEach(([k, v]) => { %><tr><td><%= k %></td><td class="num"><span class="money"><%= m(v) %></span></td></tr><% }) %></tbody></table>
+    <dl class="doc-totals"><div><dt>تعداد ردیف</dt><dd><%= rows.length %></dd></div><div class="is-main"><dt>درآمد خالص روز</dt><dd><%= m(total) %></dd></div></dl>
+    <% } %>
+    <p class="doc-note">پیش‌پرداخت در روز پرداخت حساب می‌شود، نه روز ویزیت. انتقال اعتبار بین ویزیت‌ها درآمد نیست و در این گزارش نمی‌آید.</p>
+<%- include('bottom') %>

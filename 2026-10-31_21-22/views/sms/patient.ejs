@@ -1,0 +1,33 @@
+<%# One custom message to a patient. Locals: patient, phone (normalized or null), blocked (reason text or null), text, error. %>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ارسال پیامک', pageCss: 'page-sms' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb"><a href="/patients/<%= patient.code %>"><%= patient.first_name %> <%= patient.last_name %></a> / پیامک</div><h1>ارسال پیامک</h1>
+        <p>گیرنده: <b><%= patient.first_name %> <%= patient.last_name %></b> · <span class="mono"><%= phone || '—' %></span></p></div></div>
+
+      <% if (blocked) { %><div class="callout mb-4" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span><%= blocked %></span></div><% } %>
+      <% if (error && error !== blocked) { %><div class="callout callout-crit mb-4" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span><%= error %></span></div><% } %>
+
+      <section class="card">
+        <form class="card-body form-grid" method="post" action="/patients/<%= patient.code %>/sms">
+          <div class="field span-2 sms-editor">
+            <label for="m-text">متن پیام</label>
+            <textarea id="m-text" class="textarea" name="text" rows="4" maxlength="500" dir="rtl" required data-sms-template data-sms-free<%- blocked ? ' disabled' : '' %>><%= text %></textarea>
+            <span class="hint">اطلاعات پزشکی در پیام ننویسید؛ پیام از سرویس شخص ثالث می‌گذرد. پیام تا یک دقیقه‌ی دیگر ارسال می‌شود.</span>
+            <span class="sms-count" data-sms-count aria-live="polite"></span>
+          </div>
+          <div class="form-actions span-2">
+            <button class="btn btn-primary" type="submit"<%- blocked ? ' disabled' : '' %>>ارسال</button>
+            <a class="btn btn-ghost" href="/patients/<%= patient.code %>">انصراف</a>
+          </div>
+        </form>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

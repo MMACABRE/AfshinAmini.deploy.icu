@@ -1,0 +1,8 @@
+<%# Finance tab sub-navigation. Locals: here ('overview' | 'payments' | 'pay' | 'settings'). %>
+<nav class="segmented sub-nav mb-4" aria-label="بخش‌های امور مالی">
+  <% [['overview', '/finance', 'نمای کلی', true], ['payments', '/finance/payments', 'پرداخت‌ها', can('patients')],
+      ['pay', '/finance/pay', 'ثبت پرداخت', can('finance', 2) && can('patients')], ['settings', '/finance/settings', 'تنظیمات و قیمت‌ها', has('finance_settings')]]
+     .filter((x) => x[3]).forEach(([k, href, label]) => { %>
+  <% if (k === here) { %><span class="is-on" aria-current="page"><%= label %></span><% } else { %><a href="<%= href %>"><%= label %></a><% } %>
+  <% }) %>
+</nav>

@@ -1,0 +1,89 @@
+<%# Contact page. Same content for visitors (on the sign-in side) and signed-in users (inside the app shell).
+    Locals: active, contact { name, phone, phoneShown, email }, user (nullable). %>
+<%
+const signedIn = Boolean(user);
+const steps = [
+  'صفحه‌ای که در آن بودید، مثلاً «جستجوی پیشرفته».',
+  'کاری که انجام می‌دادید و پیامی که روی صفحه دیدید.',
+  'زمان تقریبی رخ‌دادن مشکل.',
+  'عکس صفحه (اسکرین‌شات)، اگر ممکن است.',
+];
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('partials/head', { title: 'تماس با ما', pageCss: 'page-contact' }) %>
+</head>
+<body class="<%= signedIn ? 'contact-app' : 'contact-public' %>">
+<% if (signedIn) { %>
+<%- include('partials/shell-top') %>
+<% } else { %>
+<%- include('partials/sprite') %>
+<header class="contact-bar">
+  <a class="brand contact-brand" href="/login">
+    <span class="brand-mark"><svg class="icon"><use href="#i-mark"/></svg></span>
+    <span><%= siteName %></span>
+  </a>
+  <div class="contact-bar-actions">
+    <a class="btn btn-sm" href="/login"><svg class="icon"><use href="#i-arrow"/></svg>بازگشت به ورود</a>
+    <%- include('partials/theme-toggle') %>
+  </div>
+</header>
+<main class="content contact-main">
+<% } %>
+
+      <section class="contact-hero" aria-labelledby="contact-h">
+        <div class="contact-hero-copy">
+          <div class="contact-person">
+            <div>
+              <b><%= contact.name %></b>
+              <span>سازنده و پشتیبان سامانه</span>
+            </div>
+          </div>
+          <h1 id="contact-h">کمک لازم دارید؟</h1>
+          <p>اگر هنگام کار با سامانه خطایی دیدید یا چیزی درست کار نکرد، مستقیم با من در تماس باشید. هر مشکلی را بنویسید تا هرچه زودتر بررسی کنم.</p>
+        </div>
+      </section>
+
+      <div class="contact-grid">
+        <section class="card contact-sheet" aria-label="راه‌های تماس">
+          <div class="contact-row">
+            <span class="contact-icon" aria-hidden="true"><svg class="icon"><use href="#i-phone"/></svg></span>
+            <div class="contact-info">
+              <span class="contact-label">تلفن همراه</span>
+              <bdi class="contact-value" id="contact-phone"><%= contact.phoneShown %></bdi>
+            </div>
+            <div class="contact-actions">
+              <a class="btn btn-primary btn-sm" href="tel:<%= contact.phone %>"><svg class="icon"><use href="#i-phone"/></svg>تماس</a>
+              <button class="btn btn-sm contact-copy" type="button" data-copy="<%= contact.phone %>"><svg class="icon"><use href="#i-copy"/></svg><span>کپی</span></button>
+            </div>
+          </div>
+          <div class="contact-row">
+            <span class="contact-icon" aria-hidden="true"><svg class="icon"><use href="#i-mail"/></svg></span>
+            <div class="contact-info">
+              <span class="contact-label">ایمیل</span>
+              <bdi class="contact-value" id="contact-email"><%= contact.email %></bdi>
+            </div>
+            <div class="contact-actions">
+              <a class="btn btn-primary btn-sm" href="mailto:<%= contact.email %>"><svg class="icon"><use href="#i-mail"/></svg>ارسال ایمیل</a>
+              <button class="btn btn-sm contact-copy" type="button" data-copy="<%= contact.email %>"><svg class="icon"><use href="#i-copy"/></svg><span>کپی</span></button>
+            </div>
+          </div>
+        </section>
+
+        <section class="card contact-guide" aria-labelledby="guide-h">
+          <h2 id="guide-h">هنگام گزارش مشکل بنویسید</h2>
+          <ul class="contact-steps">
+            <% steps.forEach((s) => { %><li><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg><span><%= s %></span></li><% }) %>
+          </ul>
+          <p class="contact-privacy"><svg class="icon" aria-hidden="true"><use href="#i-shield"/></svg><span>نام و مشخصات بیماران را در پیام ننویسید. کد بیمار، مثل <bdi class="mono">P-000123</bdi>، کافی است.</span></p>
+        </section>
+      </div>
+
+<% if (signedIn) { %>
+<%- include('partials/shell-bottom') %>
+<% } else { %>
+</main>
+<% } %>
+</body>
+</html>

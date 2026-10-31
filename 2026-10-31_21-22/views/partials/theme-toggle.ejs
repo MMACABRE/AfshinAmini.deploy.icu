@@ -1,0 +1,6 @@
+<%# Light/dark button. CSS shows only the button for the theme you can switch to (see components.css). Needs #i-sun and #i-moon in the page sprite. %>
+<form class="theme-form" method="post" action="/theme">
+  <input type="hidden" name="back" value="<%= here %>">
+  <button class="btn btn-ghost btn-icon theme-to-dark" type="submit" name="theme" value="dark" title="حالت تاریک" aria-label="حالت تاریک"><svg class="icon"><use href="#i-moon"/></svg></button>
+  <button class="btn btn-ghost btn-icon theme-to-light" type="submit" name="theme" value="light" title="حالت روشن" aria-label="حالت روشن"><svg class="icon"><use href="#i-sun"/></svg></button>
+</form>

@@ -1,0 +1,114 @@
+/* Page-specific styles for import-export.html (ورود و خروج داده) */
+
+/* Headings and spacing utilities */
+.h2-lg {
+  font-size: var(--fs-lg);
+  margin-bottom: var(--sp-4);
+}
+
+.mb-6 {
+  margin-bottom: var(--sp-6);
+}
+
+.mt-3 {
+  margin-top: var(--sp-3);
+}
+
+.mt-6 {
+  margin-top: var(--sp-6);
+}
+
+/* Text and icon helpers */
+.icon-muted {
+  color: var(--text-3);
+}
+
+.text-xs-muted {
+  font-size: var(--fs-xs);
+  color: var(--text-3);
+}
+
+.block-sm {
+  display: block;
+  font-size: var(--fs-sm);
+}
+
+/* Codes, numbers and file names keep LTR order inside Persian text */
+.mono {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+/* Confirm bar after the preview table */
+.confirm-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  padding: var(--sp-4) var(--sp-5);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface);
+}
+
+.confirm-bar p {
+  margin: 0;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+.confirm-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+}
+
+/* Full-data download: prominent card with an accent edge */
+.zip-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--sp-5);
+  padding: var(--sp-6) var(--pad);
+  border-inline-start: 4px solid var(--accent);
+}
+
+.zip-body {
+  display: grid;
+  gap: var(--sp-2);
+  min-width: 0;
+  flex: 1 1 320px;
+  font-size: var(--fs-sm);
+  color: var(--text-2);
+}
+
+.zip-title {
+  font-size: var(--fs-xl);
+  letter-spacing: -.02em;
+  color: var(--text);
+}
+
+.zip-list {
+  margin: 0;
+  padding-inline-start: var(--sp-5);
+  display: grid;
+  gap: var(--sp-1);
+}
+
+.zip-action {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 600px) {
+  .zip-action,
+  .zip-action .btn {
+    width: 100%;
+  }
+}
+
+/* The full-zip card's edge runs from green into terracotta. */
+.zip-card { position: relative; overflow: hidden; border-inline-start: 1px solid var(--border); }
+.zip-card::before { content: ""; position: absolute; inset-block: 0; inset-inline-start: 0; width: 4px; background: linear-gradient(var(--accent) 30%, var(--terra)); }
