@@ -1,0 +1,364 @@
+/* Dashboard page styles */
+
+/* Quick access (D21): one tall sage tile for the main action, quieter tiles around it.
+   Staff: 3 columns (primary + 2x2). Admin: 4 columns (primary + 3x2). */
+.quick { display: flex; flex-direction: column; gap: var(--sp-4); }
+.qa-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); grid-auto-rows: minmax(132px, auto); gap: var(--sp-4); }
+.qa-grid.qa-admin { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.qa-tile {
+  position: relative; display: flex; flex-direction: column; justify-content: space-between; gap: var(--sp-4);
+  padding: var(--sp-5); border-radius: var(--radius-lg); min-width: 0;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text); box-shadow: var(--shadow-xs);
+}
+.qa-tile:hover { text-decoration: none; border-color: var(--accent-line); background: var(--raised); box-shadow: var(--shadow); translate: 0 -2px; }
+.qa-icon { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-tint); color: var(--accent-text); }
+.qa-icon .icon { width: 22px; height: 22px; }
+.qa-text { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.qa-text b { font: 600 var(--fs-lg)/1.3 var(--font-head); letter-spacing: -.015em; }
+.qa-text > span { font-size: var(--fs-sm); color: var(--text-2); line-height: 1.5; }
+
+.qa-primary {
+  grid-row: span 2; justify-content: flex-end; padding: var(--sp-6);
+  background: linear-gradient(160deg, var(--accent) 0%, var(--accent-hover) 100%); border-color: transparent;
+  color: var(--text-on-accent); box-shadow: 0 14px 32px -16px var(--accent), var(--edge);
+}
+.qa-primary:hover { background: linear-gradient(160deg, var(--accent-hover) 0%, var(--accent) 100%); border-color: transparent; box-shadow: 0 18px 36px -16px var(--accent), var(--edge); }
+.qa-primary .qa-icon { width: 64px; height: 64px; border-radius: 18px; background: rgba(255, 255, 255, .16); color: inherit; margin-bottom: auto; }
+.qa-primary .qa-icon .icon { width: 32px; height: 32px; stroke-width: 2; }
+.qa-primary .qa-text b { font-size: var(--fs-2xl); letter-spacing: -.03em; }
+.qa-primary .qa-text > span { color: inherit; opacity: .85; font-size: var(--fs-md); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .qa-tile { transition: translate var(--t) var(--ease), box-shadow var(--t) var(--ease), border-color var(--t-fast) var(--ease), background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease); }
+}
+@media (max-width: 1200px) {
+  .qa-grid.qa-admin { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .qa-admin .qa-primary { grid-row: span 1; grid-column: span 3; min-height: 160px; }
+}
+@media (max-width: 900px) {
+  .qa-grid, .qa-grid.qa-admin { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .qa-primary, .qa-admin .qa-primary { grid-row: span 1; grid-column: 1 / -1; min-height: 160px; }
+}
+@media (max-width: 600px) {
+  .qa-grid { gap: var(--sp-3); grid-auto-rows: auto; }
+  .qa-tile { padding: var(--sp-4); gap: var(--sp-3); }
+  .qa-text b { font-size: var(--fs-md); }
+  .qa-text > span { font-size: var(--fs-xs); }
+  .qa-primary { padding: var(--sp-5); min-height: 0; flex-direction: row; align-items: center; gap: var(--sp-4); }
+  .qa-primary .qa-icon { margin-bottom: 0; width: 56px; height: 56px; flex: none; }
+  .qa-primary .qa-text b { font-size: var(--fs-xl); }
+}
+
+/* Today's visits card (D23) */
+.today-links { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+
+/* Live clock card (D24): neon seven-segment digits drawn in CSS (no font download), driven by app.js enhanceClock.
+   Light theme: a pale sage LCD with deep green digits; dark theme: the dark panel with neon digits (owner, 2026-10-25).
+   Segments: a top, b top-right, c bottom-right, d bottom, e bottom-left, f top-left, g middle.
+   The segment rules below use physical `left` on purpose (the one exception to the logical-properties rule): a digit's
+   shape never mirrors in RTL, and with inset-inline-start segments b/f and c/e would swap sides. .clock-time is ltr. */
+.clock-card {
+  --neon: #1f5236; --clock-bg: #e1ecdb; --clock-line: #a5c4a5; --clock-ink: #1f4d33; --clock-sub: #4d6e59;
+  --clock-glow: none; --seg-off: .1;
+  display: flex; flex-direction: column; gap: var(--sp-2); align-items: center;
+  padding: var(--sp-4) var(--sp-6); border-radius: var(--radius-lg); min-width: 0; color: var(--clock-ink);
+  background: var(--clock-bg); border: 1px solid var(--clock-line);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .clock-card {
+    --neon: #5dffb4; --clock-bg: #08140f; --clock-line: rgba(93, 255, 180, .16); --clock-ink: #d9fff0; --clock-sub: #7fb9a0;
+    --clock-glow: drop-shadow(0 0 .22em rgba(93, 255, 180, .5)); --seg-off: .09;
+  }
+}
+:root[data-theme="dark"] .clock-card {
+  --neon: #5dffb4; --clock-bg: #08140f; --clock-line: rgba(93, 255, 180, .16); --clock-ink: #d9fff0; --clock-sub: #7fb9a0;
+  --clock-glow: drop-shadow(0 0 .22em rgba(93, 255, 180, .5)); --seg-off: .09;
+}
+.clock-time { display: flex; align-items: flex-end; gap: .16em; direction: ltr; font-size: 42px; line-height: 1; filter: var(--clock-glow); }
+.clock-sec { font-size: .55em; margin-inline-start: .3em; }
+.clock-group { display: flex; gap: .16em; }
+.clock-colon { display: flex; flex-direction: column; justify-content: center; gap: .3em; height: 1.1em; width: .14em; }
+.clock-colon i { display: block; width: .13em; height: .13em; border-radius: 50%; background: var(--neon); }
+.seg { position: relative; display: block; width: .62em; height: 1.1em; }
+.seg i { position: absolute; background: var(--neon); opacity: var(--seg-off); transition: opacity .12s linear; }
+.seg .a, .seg .d, .seg .g { left: .075em; width: .47em; height: .12em; clip-path: polygon(0 50%, 12% 0, 88% 0, 100% 50%, 88% 100%, 12% 100%); }
+.seg .b, .seg .c, .seg .e, .seg .f { width: .12em; height: .46em; clip-path: polygon(50% 0, 100% 12%, 100% 88%, 50% 100%, 0 88%, 0 12%); }
+.seg .a { top: 0; } .seg .g { top: .49em; } .seg .d { top: .98em; }
+.seg .f { left: 0; top: .035em; } .seg .b { left: .5em; top: .035em; }
+.seg .e { left: 0; top: .525em; } .seg .c { left: .5em; top: .525em; }
+.seg[data-n="0"] .a, .seg[data-n="0"] .b, .seg[data-n="0"] .c, .seg[data-n="0"] .d, .seg[data-n="0"] .e, .seg[data-n="0"] .f { opacity: 1; }
+.seg[data-n="1"] .b, .seg[data-n="1"] .c { opacity: 1; }
+.seg[data-n="2"] .a, .seg[data-n="2"] .b, .seg[data-n="2"] .d, .seg[data-n="2"] .e, .seg[data-n="2"] .g { opacity: 1; }
+.seg[data-n="3"] .a, .seg[data-n="3"] .b, .seg[data-n="3"] .c, .seg[data-n="3"] .d, .seg[data-n="3"] .g { opacity: 1; }
+.seg[data-n="4"] .b, .seg[data-n="4"] .c, .seg[data-n="4"] .f, .seg[data-n="4"] .g { opacity: 1; }
+.seg[data-n="5"] .a, .seg[data-n="5"] .c, .seg[data-n="5"] .d, .seg[data-n="5"] .f, .seg[data-n="5"] .g { opacity: 1; }
+.seg[data-n="6"] .a, .seg[data-n="6"] .c, .seg[data-n="6"] .d, .seg[data-n="6"] .e, .seg[data-n="6"] .f, .seg[data-n="6"] .g { opacity: 1; }
+.seg[data-n="7"] .a, .seg[data-n="7"] .b, .seg[data-n="7"] .c { opacity: 1; }
+.seg[data-n="8"] .a, .seg[data-n="8"] .b, .seg[data-n="8"] .c, .seg[data-n="8"] .d, .seg[data-n="8"] .e, .seg[data-n="8"] .f, .seg[data-n="8"] .g { opacity: 1; }
+.seg[data-n="9"] .a, .seg[data-n="9"] .b, .seg[data-n="9"] .c, .seg[data-n="9"] .d, .seg[data-n="9"] .f, .seg[data-n="9"] .g { opacity: 1; }
+.clock-dates { display: flex; flex-direction: column; align-items: center; gap: 1px; text-align: center; }
+.clock-jalali { font: 500 var(--fs-sm)/1.4 var(--font-body); color: var(--clock-ink); }
+.clock-greg { font: 400 var(--fs-xs)/1.4 var(--font-body); color: var(--clock-sub); direction: ltr; unicode-bidi: isolate; letter-spacing: .02em; }
+@media (prefers-reduced-motion: no-preference) {
+  .clock-colon { animation: clock-blink 1s steps(1, end) infinite; }
+  @keyframes clock-blink { 50% { opacity: .25; } }
+}
+.page-head .clock-card { flex: 0 1 300px; }
+@media (max-width: 600px) {
+  .page-head .clock-card { flex-basis: 100%; padding: var(--sp-4); }
+  .clock-time { font-size: 38px; }
+}
+
+/* «هشدارها» (D26): low stock and expiry, red first. */
+.alert-list { list-style: none; margin: 0; padding: var(--sp-2) var(--pad) var(--sp-4); display: flex; flex-direction: column; }
+.alert-row { display: flex; align-items: center; gap: var(--sp-3); min-height: 44px; border-bottom: 1px solid var(--border-subtle); font-size: var(--fs-sm); flex-wrap: wrap; }
+.alert-row:last-child { border-bottom: 0; }
+.alert-row > a { font-weight: 600; }
+.alert-row > span:not(.alert-dot):not(.sr-only) { margin-inline-start: auto; color: var(--text-2); }
+.alert-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.alert-crit .alert-dot { background: var(--crit-dot); box-shadow: 0 0 0 4px var(--crit-bg); }
+.alert-warn .alert-dot { background: var(--warn-dot); box-shadow: 0 0 0 4px var(--warn-bg); }
+
+/* «درآمد امروز» (D30), finance view only. */
+.income-today { display: flex; align-items: center; gap: var(--sp-4); padding: var(--sp-4) var(--pad); color: var(--text); flex-wrap: wrap; }
+.income-today:hover { text-decoration: none; border-color: var(--accent-line); }
+.income-today b { display: block; font: 700 var(--fs-xl)/1.2 var(--font-mono); color: var(--terra-text); direction: ltr; unicode-bidi: isolate; text-align: start; }
+.income-today .muted { margin-inline-start: auto; font-size: var(--fs-sm); }
+
+/* Terracotta sun behind the main sage tile (see "Terracotta touches" in components.css). */
+.qa-primary { overflow: hidden; isolation: isolate; }
+.qa-primary::after {
+  content: ""; position: absolute; z-index: -1; width: 150px; height: 150px; border-radius: 50%;
+  inset-block-start: -56px; inset-inline-end: -48px; background: var(--terra);
+  transition: transform 600ms cubic-bezier(.23, 1, .32, 1);
+}
+@media (hover: hover) and (pointer: fine) { .qa-primary:hover::after { transform: scale(1.12); } }
+@media (max-width: 600px) { .qa-primary::after { width: 96px; height: 96px; inset-block-start: -40px; inset-inline-end: -32px; } }
+/* The sun is shaded: light where it faces the room, deep at its far edge; the tile's green deepens toward it. */
+.qa-primary::after { background: radial-gradient(circle at 30% 70%, var(--terra-light), var(--terra) 50%, var(--terra-deep) 105%); }
+.qa-primary { background: linear-gradient(160deg, var(--accent) 0%, var(--accent-hover) 70%, color-mix(in srgb, var(--accent-hover) 70%, var(--terra-deep)) 100%); }
+/* The clock's seconds tick in terracotta beside the green hours and minutes. */
+.clock-sec { --neon: var(--terra); }
+
+/* Dashboard layout (D54): one clinic-wide grid. 4 columns, rows at least 148 px, dense packing so a widget the user
+   may not see leaves no hole. Each cell's size comes from data-size ("2x2" = 2 columns by 2 rows); no inline styles
+   (CSP). Under 900 px: 2 columns, a 4-wide widget becomes 2 wide, rows grow with their content (at least 120 px). */
+.dash-grid {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); grid-auto-rows: minmax(148px, auto);
+  grid-auto-flow: dense; gap: var(--sp-5);
+}
+.dash-cell { min-width: 0; display: flex; flex-direction: column; }
+.dash-cell > * { flex: 1 1 auto; min-width: 0; margin: 0; }
+.dash-cell[data-size^="1x"] { grid-column: span 1; }
+.dash-cell[data-size^="2x"] { grid-column: span 2; }
+.dash-cell[data-size^="4x"] { grid-column: 1 / -1; }
+.dash-cell[data-size$="x2"] { grid-row: span 2; }
+.dash-cell[data-size$="x3"] { grid-row: span 3; }
+
+/* Long lists scroll inside their card instead of stretching the whole row. */
+.dash-cell > .card { display: flex; flex-direction: column; min-height: 0; }
+.dash-cell .visit-list, .dash-cell .alert-list, .dash-cell .table-wrap { flex: 1 1 auto; min-height: 0; overflow: auto; }
+.dash-cell[data-size$="x1"] .visit-list, .dash-cell[data-size$="x1"] .alert-list { max-height: 148px; }
+.dash-cell[data-size$="x2"] .visit-list, .dash-cell[data-size$="x2"] .alert-list, .dash-cell[data-size$="x2"] .table-wrap { max-height: 300px; }
+.dash-cell[data-size$="x3"] .visit-list, .dash-cell[data-size$="x3"] .table-wrap { max-height: 470px; }
+
+/* Stat cards sit at the top of their cell; a 2-wide stat lays its figure beside the label. */
+.dash-cell > .stat { justify-content: space-between; }
+.dash-cell[data-size="2x1"] > .stat { display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: var(--sp-5); }
+.dash-cell[data-size="2x1"] > .stat .stat-delta { grid-column: 1 / -1; }
+.dash-cell > .income-today { flex-direction: row; flex-wrap: wrap; align-items: center; align-content: center; }
+.dash-cell[data-size="1x1"] > .income-today { flex-direction: column; align-items: flex-start; justify-content: center; gap: var(--sp-2); }
+.dash-cell[data-size="1x1"] > .income-today .muted { margin-inline-start: 0; }
+
+/* Quick buttons follow their widget's size: 4 wide = today's admin grid, 2 wide = two columns,
+   4x1 = one compact row of titles. */
+.dash-cell[data-widget="quick"] > .quick { gap: var(--sp-3); }
+.dash-cell[data-widget="quick"][data-size^="4x"] .qa-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.dash-cell[data-widget="quick"][data-size^="2x"] .qa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(96px, auto); }
+.dash-cell[data-widget="quick"][data-size^="2x"] .qa-primary { grid-row: span 1; grid-column: 1 / -1; min-height: 132px; }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); grid-auto-rows: auto; gap: var(--sp-3); }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-tile { flex-direction: row; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-text > span { display: none; }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-text b { font-size: var(--fs-md); }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-primary { grid-row: span 1; padding: var(--sp-3) var(--sp-4); justify-content: flex-start; }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-primary .qa-icon { width: 44px; height: 44px; border-radius: 12px; margin-bottom: 0; }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-primary .qa-icon .icon { width: 22px; height: 22px; }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-primary .qa-text b { font-size: var(--fs-md); letter-spacing: -.015em; }
+.dash-cell[data-widget="quick"][data-size="4x1"] .qa-primary::after { width: 72px; height: 72px; inset-block-start: -30px; inset-inline-end: -24px; }
+
+@media (max-width: 1200px) {
+  .dash-cell[data-widget="quick"][data-size^="4x"] .qa-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .dash-cell[data-widget="quick"][data-size="4x2"] .qa-primary { grid-row: span 1; grid-column: span 3; min-height: 160px; }
+}
+@media (max-width: 900px) {
+  .dash-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-auto-rows: minmax(120px, auto); gap: var(--sp-4); }
+  .dash-cell[data-size^="4x"] { grid-column: 1 / -1; }
+  .dash-cell[data-size$="x2"], .dash-cell[data-size$="x3"] { grid-row: auto; }
+  .dash-cell[data-widget="quick"][data-size^="4x"] .qa-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dash-cell[data-widget="quick"][data-size="4x2"] .qa-primary { grid-column: 1 / -1; }
+  .dash-cell .visit-list, .dash-cell .alert-list, .dash-cell .table-wrap { max-height: none; }
+}
+
+/* «پایان چیدمان»: the layout button filled dark while edit mode is on (D54). */
+.btn-ink, .btn-ink:hover { background: var(--ink); border-color: var(--ink); color: var(--on-ink); }
+
+/* The layout button sits under the page title, not between the title and the clock. */
+.dash-actions { margin-block-start: var(--sp-4); }
+/* No-JS dashboard layout form: one row per widget (show, size, order). */
+@media (min-width: 601px) {
+  [data-layout-fallback] .form-grid { grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr); align-items: end; }
+}
+
+/* ====== Dashboard edit mode (D54). The grip, × and drop-spot pieces repeat page-layouts.css, which this page does not load. ====== */
+/* ---------- shared pieces ---------- */
+.pl-grip {
+  flex: none; display: inline-grid; place-items: center; width: 28px; height: 32px; margin-inline-start: -6px;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-3); cursor: grab; touch-action: none;
+}
+.pl-grip:hover { background: var(--hover); color: var(--accent-text); }
+.pl-grip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pl-grip-ic { width: 10px; height: 16px; fill: currentColor; }
+.pl-dragging, .pl-dragging * { cursor: grabbing !important; user-select: none; }
+
+.pl-box-tools { display: inline-flex; align-items: center; gap: 4px; margin-inline-start: auto; flex: none; }
+.pl-req {
+  height: 26px; padding: 0 10px; border-radius: var(--radius-full); border: 1px solid var(--border); background: transparent;
+  font: 500 var(--fs-xs)/1 var(--font-body); color: var(--text-3); cursor: pointer;
+}
+.pl-req:hover { border-color: var(--terra-line); color: var(--terra-text); }
+.pl-req[aria-pressed="true"] { background: var(--terra-tint); border-color: var(--terra-line); color: var(--terra-text); }
+.pl-req[aria-pressed="true"]::before { content: "* "; font-weight: 700; }
+.pl-lock {
+  height: 26px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: var(--radius-full);
+  background: var(--mute-bg); color: var(--mute-fg); font-size: var(--fs-xs);
+}
+.pl-x {
+  width: 28px; height: 28px; display: inline-grid; place-items: center; border: 0; border-radius: 50%;
+  background: transparent; color: var(--text-3); cursor: pointer;
+}
+.pl-x .icon { width: 15px; height: 15px; }
+.pl-x:hover { background: var(--crit-bg); color: var(--crit-fg); }
+.pl-tag { flex: none; font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--accent-tint); color: var(--accent-text); }
+@media (prefers-reduced-motion: no-preference) {
+  .pl-req, .pl-x, .pl-grip { transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
+  .pl-req:active, .pl-x:active, .pl-src:active { transform: scale(.97); }
+}
+
+/* Drop spot and the item being carried. */
+.pl-ph {
+  border: 1.5px dashed var(--terra-line); border-radius: var(--radius); min-height: 56px;
+  background: color-mix(in srgb, var(--terra-pale) 70%, transparent);
+}
+.pl-cards > .pl-ph { min-height: 96px; border-radius: var(--radius-lg); }
+.pl-ghost-drag {
+  position: fixed; z-index: 100; pointer-events: none; margin: 0;
+  box-shadow: 0 22px 44px -18px rgba(40, 30, 10, .45), var(--shadow);
+  rotate: -.8deg; opacity: .96; background: var(--raised); border-radius: var(--radius);
+}
+.is-lifted { display: none !important; }
+.is-kb { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--accent-tint) !important; }
+@media (prefers-reduced-motion: no-preference) {
+  .is-new { animation: pl-land 700ms cubic-bezier(.23, 1, .32, 1); }
+}
+@keyframes pl-land { 0% { box-shadow: 0 0 0 6px var(--accent-tint); background: var(--accent-tint); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+/* ---------- dashboard edit mode ---------- */
+.dash-grid.is-editing > .dash-cell { position: relative; border-radius: var(--radius-lg); outline: 1.5px dashed var(--accent-line); outline-offset: 3px; }
+.dash-grid.is-editing > .dash-cell:hover, .dash-grid.is-editing > .dash-cell:focus-within { outline-style: solid; outline-color: var(--accent); }
+.pl-w-head {
+  display: flex; align-items: center; gap: var(--sp-2); min-height: 40px; padding: 4px 6px 4px 8px; margin-block-end: var(--sp-2);
+  border-radius: var(--radius); background: var(--surface-2);
+}
+.pl-w-head b { font: 600 var(--fs-sm)/1.3 var(--font-head); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pl-w-tools { margin-inline-start: auto; display: inline-flex; align-items: center; gap: 2px; flex: none; }
+.pl-size {
+  display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 8px; border: 1px solid var(--border); border-radius: var(--radius-full);
+  background: var(--surface); color: var(--text-2); font: 500 11px/1 var(--font-mono); cursor: pointer;
+}
+.pl-size:hover { border-color: var(--accent-line); color: var(--accent-text); }
+.pl-size-ic { width: 22px; height: 16px; flex: none; }
+.pl-size-ic rect { fill: var(--border-strong); opacity: .55; }
+.pl-size-ic rect.on { fill: var(--accent); opacity: 1; }
+.pl-locked {
+  flex: 1; display: grid; place-items: center; min-height: 96px; padding: var(--sp-4); border-radius: var(--radius-lg);
+  background: repeating-linear-gradient(135deg, var(--surface-2) 0 10px, transparent 10px 20px); border: 1px solid var(--border-subtle);
+  color: var(--text-3); font-size: var(--fs-sm); text-align: center;
+}
+.pl-w-add {
+  display: flex; flex-direction: column; gap: var(--sp-3); padding: var(--sp-4); min-height: 148px;
+  border: 1.5px dashed var(--border-strong); border-radius: var(--radius-lg); overflow: auto;
+}
+.pl-w-add-title { display: inline-flex; align-items: center; gap: 6px; font: 600 var(--fs-sm) var(--font-body); color: var(--text-2); }
+.pl-w-add-title .icon { width: 16px; height: 16px; }
+.pl-chips { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin: 0; padding: 0; list-style: none; }
+.pl-chip {
+  display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid var(--border);
+  border-radius: var(--radius-full); background: var(--surface); color: var(--text); font: 500 var(--fs-sm) var(--font-body); cursor: grab; touch-action: pan-y;
+}
+.pl-chip:hover { border-color: var(--accent-line); background: var(--accent-tint); }
+.pl-chip .icon { width: 14px; height: 14px; color: var(--accent-text); }
+.pl-w-none { margin: 0; color: var(--text-3); font-size: var(--fs-sm); }
+
+/* Quick buttons in edit mode: a grip and × on each tile, a dashed «+ دکمه» cell. */
+.qa-tile:has(> .pl-qa-tools:not([hidden])) { padding-block-start: 52px; }
+.pl-qa-tools { position: absolute; inset-block-start: 6px; inset-inline: 6px; display: flex; align-items: center; justify-content: space-between; }
+.qa-primary .pl-qa-tools .pl-grip, .qa-primary .pl-qa-tools .pl-x { color: inherit; opacity: .85; }
+.pl-qa-more {
+  display: flex; align-items: center; justify-content: center; gap: 6px; min-height: 96px; width: 100%;
+  border: 1.5px dashed var(--border-strong); border-radius: var(--radius-lg); background: transparent; color: var(--text-2);
+  font: 500 var(--fs-sm) var(--font-body); cursor: pointer;
+}
+.pl-qa-more:hover { border-color: var(--accent-line); color: var(--accent-text); }
+.pl-qa-pop { min-width: 240px; list-style: none; margin: 0; padding: var(--sp-2); }
+.pl-qa-pop button {
+  width: 100%; min-height: 44px; display: flex; align-items: center; gap: var(--sp-2); padding: 0 var(--sp-2); border: 0;
+  border-radius: var(--radius-sm); background: transparent; color: var(--text); font: 500 var(--fs-sm) var(--font-body); cursor: pointer; text-align: start;
+}
+.pl-qa-pop button:hover { background: var(--surface-2); }
+.pl-qa-pop .icon { width: 16px; height: 16px; color: var(--text-3); }
+@media (max-width: 600px) {
+  .pl-size { height: 36px; }
+  .pl-chip { min-height: 44px; }
+}
+
+/* Draft bar of the dashboard edit mode (same as the patient form editor). */
+/* Draft bar: always reachable at the foot of the screen. */
+.pl-draft {
+  position: sticky; inset-block-end: var(--sp-4); z-index: 20; margin-block-start: var(--sp-6);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px); box-shadow: var(--shadow);
+}
+.pl-draft-state { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); }
+.pl-draft.is-dirty .pl-draft-state { color: var(--text); font-weight: 600; }
+.pl-draft.is-dirty .pl-draft-state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--terra); box-shadow: 0 0 0 4px var(--terra-tint); flex: none; }
+.pl-draft-warn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); background: var(--warn-bg); color: var(--warn-fg); font-size: var(--fs-xs); }
+.pl-draft-warn[hidden] { display: none; }
+.pl-draft-warn .icon { width: 14px; height: 14px; }
+.pl-draft-btns { margin-inline-start: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.pl-draft-btns form { display: contents; }
+.pl-foot { display: none; }
+.pl-err { margin-block-end: var(--sp-4); }
+
+@media (max-width: 900px) {
+  .pl-draft { inset-block-end: calc(68px + var(--sp-3) + env(safe-area-inset-bottom, 0px)); }
+  .pl-draft .pl-wide { display: none; }
+  .pl-foot:not([hidden]) { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block: var(--sp-4) var(--sp-8); }
+}
+@media (max-width: 600px) {
+  .pl-draft { flex-wrap: nowrap; padding: var(--sp-2) var(--sp-3); }
+  .pl-draft-state { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--fs-xs); }
+  .pl-draft-btns { flex-wrap: nowrap; }
+  .pl-grip { width: 44px; height: 44px; }
+  .pl-x { width: 44px; height: 44px; }
+}
+/* The add tile and the quick «+ دکمه» cell. */
+.dash-cell[data-w-add] > .pl-w-add { flex: 1; }
+.pl-qa-add { position: relative; display: flex; }
+.pl-qa-pop { position: absolute; inset-block-start: calc(100% + 6px); inset-inline-start: 0; z-index: 30; box-shadow: var(--shadow); }
+
+/* Inside the editors the hidden attribute always wins over a class that sets display. */
+.dash-editor [hidden] { display: none !important; }
+/* Edit mode: the head never grows; the quick widget's own title is read by screen readers only (the head names it). */
+.dash-cell > .pl-w-head { flex: none; }
+.dash-editor .quick > h2 { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }

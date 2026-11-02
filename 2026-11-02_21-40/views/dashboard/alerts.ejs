@@ -1,0 +1,13 @@
+<%# Stock alerts. Locals: w (data: the alerts, never empty when shown), fa. %>
+<% const stockAlerts = w.data; %>
+<section class="card alerts-card" aria-labelledby="al-h">
+  <div class="card-head">
+    <div><h2 id="al-h">هشدارها</h2><p><%= fa(stockAlerts.length) %> هشدار انبار</p></div>
+    <a class="btn btn-sm" href="/storage?f=alert">همه در انبار</a>
+  </div>
+  <ul class="alert-list">
+    <% stockAlerts.slice(0, 12).forEach((a) => { %>
+    <li class="alert-row alert-<%= a.level %>"><span class="alert-dot" aria-hidden="true"></span><a href="/storage/items/<%= a.item.id %>"><%= a.item.name %></a><span><%= a.text %></span><span class="sr-only"><%= a.level === 'crit' ? '(فوری)' : '(هشدار)' %></span></li>
+    <% }) %>
+  </ul>
+</section>

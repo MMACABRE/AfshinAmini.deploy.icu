@@ -1,0 +1,184 @@
+<%#
+  The drag editor of the patient form layout (D52, variant A). Rendered hidden; app.js (enhanceFormLayout) shows it and
+  hides [data-layout-fallback]. Without JavaScript the plain form below it is the editor.
+  Locals (from views/patients/layout.ejs): layout, catalogue, customBoxes, hasPrevious, previewLocals.
+
+  DOM contract for app.js:
+  [data-layout-editor]                     root, `hidden` until enhanced; data-layout (saved layout JSON), data-boxes
+                                           ({ id: { label, type?, full, locked? } }), data-cards ({ builtInCardId: label })
+    form[data-layout-save] > input[name=layout][data-layout-json]   filled with the draft JSON on submit
+    [data-zone=card]                       the card list; children section[data-item=card]
+      section[data-item=card][data-id][data-label?]   data-label only on custom cards (card:<n>)
+        [data-grip]  [data-label-text]  [data-count]  button[data-act=up|down]
+        [data-zone=box]                    the card's boxes; children [data-item=box]
+          [data-item=box][data-id][data-label][data-type?][data-full?][data-req?][data-locked?]
+            [data-grip] [data-label-text] button[data-act=req][aria-pressed] button[data-act=hide] .pl-preview
+    [data-tray]  [data-hidden-list] > li > button[data-source=box][data-id][data-label][data-full?]
+                 [data-type-list] > li > button[data-source=type][data-type][data-label][data-full?]
+                 button[data-act=new-card]   [data-close-tray]
+    button[data-open-tray]                 the floating «افزودن کادر» under 900 px; open = class pl-tray-open on the root
+    [data-draft] [data-draft-state] [data-sms-warn]  a[data-cancel]  button[data-save]
+    template[data-tpl=box|card|name|src]   empty item shells (src = one tray item: li > button[data-source=box], set data-id/data-label); template[data-tpl=preview][data-type=<type>] one per type
+    template[data-tpl=preview][data-box=<id>]  the real greyed input of every box hidden at page load (shown again from the tray)
+    [data-live]                            polite live region
+%><%
+// The real input of a box, greyed: the form-box partial in its disabled mode (same markup as the patient form).
+const boxHtml = (box, opts) => include('../partials/form-box', previewLocals(box, opts));
+const icon = (n) => '<svg class="icon" aria-hidden="true"><use href="#i-' + n + '"/></svg>';
+const grip = '<svg class="pl-grip-ic" viewBox="0 0 12 18" aria-hidden="true"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></svg>';
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const NAMES = ['first_name', 'last_name'];
+const builtin = new Map(catalogue.boxes.map((b) => [b.id, b]));
+const custom = new Map(customBoxes.map((b) => ['c:' + b.id, b]));
+const typeOf = new Map(catalogue.types.map((t) => [t.id, t]));
+const cardLabel = (c) => (c.label !== undefined ? c.label : catalogue.cards.find((x) => x.id === c.id).label);
+const placed = new Set(layout.cards.flatMap((c) => c.boxes.map((b) => b.id)));
+const entryOf = (id) => builtin.get(id) || custom.get(id);
+const labelOf = (id) => entryOf(id).label;
+const fullOf = (id) => (builtin.has(id) ? !!builtin.get(id).full : !!typeOf.get(custom.get(id).type).full);
+const hiddenBoxes = [
+  ...catalogue.boxes.filter((b) => !placed.has(b.id) && !NAMES.includes(b.id)).map((b) => b.id),
+  ...customBoxes.filter((b) => !placed.has('c:' + b.id)).map((b) => 'c:' + b.id),
+];
+const TYPE_GLYPH = { short_text: 'Aa', long_text: '¶', number: '۱۲', date: icon('calendar'), choice: '☰', yes_no: icon('check') };
+const faNum = (n) => String(n).replace(/\d/g, (d) => '۰۱۲۳۴۵۶۷۸۹'[d]);
+const phoneHidden = !placed.has('phone');
+
+const gripBtn = (what, label) => '<button type="button" class="pl-grip" data-grip aria-label="جابه‌جایی ' + what + ' «' + esc(label) + '»" aria-describedby="pl-help">' + grip + '</button>';
+const boxTools = (id, req) => NAMES.includes(id)
+  ? '<span class="pl-lock" title="نام و نام خانوادگی همیشه در فرم هستند">همیشه</span>'
+  : '<button type="button" class="pl-req" data-act="req" aria-pressed="' + (req ? 'true' : 'false') + '">الزامی</button>'
+    + '<button type="button" class="pl-x" data-act="hide" aria-label="برداشتن «' + esc(labelOf(id)) + '» از فرم">' + icon('x') + '</button>';
+const boxItem = (b) => {
+  const id = b.id;
+  const c = custom.get(id);
+  const attrs = ' data-item="box" data-id="' + esc(id) + '" data-label="' + esc(labelOf(id)) + '"'
+    + (c ? ' data-type="' + c.type + '"' : '') + (fullOf(id) ? ' data-full' : '')
+    + (b.req ? ' data-req' : '') + (NAMES.includes(id) ? ' data-locked' : '');
+  return '<div class="pl-box' + (fullOf(id) ? ' span-2' : '') + '"' + attrs + '>'
+    + '<div class="pl-box-top">' + gripBtn('کادر', labelOf(id)) + '<span class="pl-box-label" data-label-text>' + esc(labelOf(id)) + '</span>'
+    + (c ? '<span class="pl-tag">' + esc(typeOf.get(c.type).label) + '</span>' : '')
+    + '<span class="pl-box-tools">' + boxTools(id, b.req) + '</span></div>'
+    + '<div class="pl-preview" aria-hidden="true">' + boxHtml(entryOf(id), { disabled: true, required: !!b.req }) + '</div></div>';
+};
+const cardHead = (id, label, count) => '<div class="pl-card-head">' + gripBtn('کارت', label)
+  + '<h2 data-label-text>' + esc(label) + '</h2><span class="pl-count" data-count>' + faNum(count) + ' کادر</span>'
+  + '<span class="pl-card-move"><button type="button" class="btn btn-ghost btn-icon btn-sm" data-act="up" aria-label="بردن کارت «' + esc(label) + '» به بالا">↑</button>'
+  + '<button type="button" class="btn btn-ghost btn-icon btn-sm" data-act="down" aria-label="بردن کارت «' + esc(label) + '» به پایین">↓</button></span></div>';
+const srcItem = (id) => '<li><button type="button" class="pl-src" data-source="box" data-id="' + esc(id) + '" data-label="' + esc(labelOf(id)) + '"'
+  + (fullOf(id) ? ' data-full' : '') + (custom.has(id) ? ' data-type="' + custom.get(id).type + '"' : '') + '>' + grip
+  + '<span>' + esc(labelOf(id)) + '</span><span class="pl-src-add">' + icon('plus') + '</span></button></li>';
+// Initial state for app.js: the saved layout and every box's name, type and width (read once; the DOM is not the source).
+const boxMeta = Object.fromEntries([...catalogue.boxes.map((b) => [b.id, { label: b.label, full: !!b.full, locked: NAMES.includes(b.id) }]), ...customBoxes.map((b) => ['c:' + b.id, { label: b.label, type: b.type, full: !!typeOf.get(b.type).full }])]);
+const cardMeta = Object.fromEntries(catalogue.cards.map((c) => [c.id, c.label]));
+const sampleBox = (t) => ({ id: 0, type: t.id, label: t.label, choices: [{ id: 1, label: 'گزینه‌ی اول', hidden: false }] });
+%>
+<div class="pl-editor" data-layout-editor hidden data-layout="<%= JSON.stringify(layout) %>" data-boxes="<%= JSON.stringify(boxMeta) %>" data-cards="<%= JSON.stringify(cardMeta) %>"<%- locals.draft ? ' data-draft="' + esc(locals.draft) + '"' : '' %> data-taken="<%= JSON.stringify(locals.taken || []) %>" data-limits="<%= JSON.stringify(locals.limits || {}) %>">
+  <p class="sr-only" id="pl-help">برای جابه‌جایی با صفحه‌کلید: فاصله یا Enter را بزنید، با کلیدهای جهت جابه‌جا کنید، Enter برای گذاشتن و Esc برای لغو.</p>
+  <div class="sr-only" aria-live="polite" data-live></div>
+  <form id="pl-save" method="post" action="/patients/layout" data-layout-save>
+    <input type="hidden" name="layout" value="" data-layout-json>
+  </form>
+
+  <div class="pl-layout">
+    <div class="card pl-canvas">
+      <div class="card-body form-section">
+        <div class="pl-fixed"><%- icon('key') %><span><b>کد بیمار</b> همیشه بالای فرم «بیمار جدید» است</span></div>
+        <div class="pl-cards" data-zone="card">
+          <% layout.cards.forEach((card) => { const label = cardLabel(card); %>
+          <section class="pl-card<%= card.boxes.length ? '' : ' is-empty' %>" data-item="card" data-id="<%= card.id %>"<%- card.label !== undefined ? ' data-label="' + esc(card.label) + '"' : '' %>>
+            <%- cardHead(card.id, label, card.boxes.length) %>
+            <div class="form-grid pl-zone" data-zone="box">
+              <% card.boxes.forEach((b) => { %><%- boxItem(b) %><% }) %>
+              <p class="pl-empty">خالی، در فرم دیده نمی‌شود. کادری را اینجا رها کنید.</p>
+            </div>
+          </section>
+          <% }) %>
+        </div>
+        <div class="pl-fixed"><%- icon('upload') %><span><b>مدارک پزشکی</b> همیشه پایین فرم «بیمار جدید» است</span></div>
+      </div>
+    </div>
+
+    <aside class="card pl-tray" data-tray aria-labelledby="pl-tray-h">
+      <div class="card-head">
+        <div><h2 id="pl-tray-h">افزودن کادر</h2><p>بکشید و در فرم رها کنید، یا بزنید تا به آخر کارت اول برود.</p></div>
+        <button type="button" class="btn btn-ghost btn-icon pl-tray-close" data-close-tray aria-label="بستن"><%- icon('x') %></button>
+      </div>
+      <div class="card-body pl-tray-body">
+        <h3>کادرهای برداشته‌شده</h3>
+        <ul class="pl-src-list" data-hidden-list><% hiddenBoxes.forEach((id) => { %><%- srcItem(id) %><% }) %></ul>
+        <p class="pl-tray-none" data-hidden-none<%- hiddenBoxes.length ? ' hidden' : '' %>>همه‌ی کادرها در فرم هستند.</p>
+        <h3>کادر تازه</h3>
+        <ul class="pl-src-list pl-type-list" data-type-list>
+          <% catalogue.types.forEach((t) => { %>
+          <li><button type="button" class="pl-src pl-src-type" data-source="type" data-type="<%= t.id %>" data-label="<%= t.label %>"<%- t.full ? ' data-full' : '' %>>
+            <span class="pl-type-ic" aria-hidden="true"><%- TYPE_GLYPH[t.id] %></span><span><%= t.label %></span><span class="pl-src-add"><%- icon('plus') %></span>
+          </button></li>
+          <% }) %>
+        </ul>
+        <button type="button" class="btn btn-block pl-new-card" data-act="new-card"><%- icon('plus') %> کارت تازه</button>
+      </div>
+    </aside>
+    <button type="button" class="btn btn-primary pl-fab" data-open-tray aria-expanded="false"><%- icon('plus') %> افزودن کادر</button>
+  </div>
+
+  <div class="pl-draft" data-draft>
+    <span class="pl-draft-state" data-draft-state>بدون تغییر</span>
+    <span class="pl-draft-warn" data-sms-warn<%- phoneHidden ? '' : ' hidden' %>><%- icon('alert') %> بدون کادر تلفن، یادآوری پیامکی برای بیماران تازه فرستاده نمی‌شود.</span>
+    <span class="pl-draft-btns">
+      <form method="post" action="/patients/layout/reset"><button class="btn btn-ghost pl-wide" type="submit">بازگشت به پیش‌فرض</button></form>
+      <form method="post" action="/patients/layout/undo"><button class="btn btn-ghost pl-wide" type="submit"<%- hasPrevious ? '' : ' disabled' %>>چیدمان قبلی</button></form>
+      <a class="btn" href="/patients/layout" data-cancel>انصراف</a>
+      <button class="btn btn-primary" type="submit" form="pl-save" data-save><%- icon('check') %>ذخیره</button>
+    </span>
+  </div>
+  <div class="pl-foot">
+    <span class="pl-draft-warn pl-foot-warn" data-sms-warn<%- phoneHidden ? '' : ' hidden' %>><%- icon('alert') %> بدون کادر تلفن، یادآوری پیامکی برای بیماران تازه فرستاده نمی‌شود.</span>
+    <form method="post" action="/patients/layout/reset"><button class="btn" type="submit">بازگشت به پیش‌فرض</button></form>
+    <form method="post" action="/patients/layout/undo"><button class="btn" type="submit"<%- hasPrevious ? '' : ' disabled' %>>چیدمان قبلی</button></form>
+  </div>
+
+  <template data-tpl="box">
+    <div class="pl-box" data-item="box">
+      <div class="pl-box-top">
+        <button type="button" class="pl-grip" data-grip aria-describedby="pl-help"><%- grip %></button>
+        <span class="pl-box-label" data-label-text></span>
+        <span class="pl-box-tools">
+          <button type="button" class="pl-req" data-act="req" aria-pressed="false">الزامی</button>
+          <button type="button" class="pl-x" data-act="hide"><%- icon('x') %></button>
+        </span>
+      </div>
+      <div class="pl-preview" aria-hidden="true"></div>
+    </div>
+  </template>
+  <template data-tpl="card">
+    <section class="pl-card is-empty" data-item="card">
+      <div class="pl-card-head">
+        <button type="button" class="pl-grip" data-grip aria-describedby="pl-help"><%- grip %></button>
+        <h2 data-label-text></h2><span class="pl-count" data-count>۰ کادر</span>
+        <span class="pl-card-move"><button type="button" class="btn btn-ghost btn-icon btn-sm" data-act="up">↑</button><button type="button" class="btn btn-ghost btn-icon btn-sm" data-act="down">↓</button></span>
+      </div>
+      <div class="form-grid pl-zone" data-zone="box">
+        <p class="pl-empty">خالی، در فرم دیده نمی‌شود. کادری را اینجا رها کنید.</p>
+      </div>
+    </section>
+  </template>
+  <template data-tpl="src">
+    <li><button type="button" class="pl-src" data-source="box"><%- grip %><span data-label-text></span><span class="pl-src-add"><%- icon('plus') %></span></button></li>
+  </template>
+  <template data-tpl="name">
+    <div class="pl-name" data-name>
+      <input class="input" type="text" maxlength="60" data-name-input aria-label="نام" placeholder="نام">
+      <input class="input" type="text" maxlength="2000" data-choices-input aria-label="گزینه‌ها، با ویرگول جدا" placeholder="گزینه‌ها، با ویرگول جدا" hidden>
+      <button type="button" class="btn btn-sm btn-primary" data-act="name">ثبت نام</button>
+      <span class="pl-name-note">نام بعداً عوض نمی‌شود.</span>
+      <p class="pl-name-err" data-name-err hidden></p>
+    </div>
+  </template>
+  <% hiddenBoxes.forEach((id) => { %>
+  <template data-tpl="preview" data-box="<%= id %>"><%- boxHtml(entryOf(id), { disabled: true }) %></template>
+  <% }) %>
+  <% catalogue.types.forEach((t) => { %>
+  <template data-tpl="preview" data-type="<%= t.id %>"><%- boxHtml(sampleBox(t), { disabled: true }) %></template>
+  <% }) %>
+</div>

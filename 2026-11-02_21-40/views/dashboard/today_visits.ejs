@@ -1,0 +1,27 @@
+<%# Today's visits. Locals: w (data: the visits of today), fa. %>
+<% const visitsToday = w.data; const upNext = visitsToday.find((x) => x.status === 'scheduled' && !x.overdue && !x.ongoing); %>
+<section class="card today-visits" aria-labelledby="tv-h">
+  <div class="card-head">
+    <div><h2 id="tv-h">ویزیت‌های امروز</h2><p><%= formatJalali(localDay()) %> · <%= fa(visitsToday.length) %> ویزیت</p></div>
+    <div class="today-links">
+      <a class="chip chip-filter" href="/visits?range=tomorrow">فردا</a>
+      <a class="chip chip-filter" href="/visits?range=week">۷ روز آینده</a>
+      <a class="chip chip-filter" href="/visits?range=month">این ماه</a>
+      <a class="btn btn-sm" href="/visits">همه‌ی ویزیت‌ها</a>
+    </div>
+  </div>
+  <% if (visitsToday.length === 0) { %>
+    <div class="card-body"><p class="muted">امروز ویزیتی ثبت نشده است.</p></div>
+  <% } else { %>
+  <ul class="visit-list visit-compact rail">
+    <% visitsToday.slice(0, 30).forEach((v) => { %>
+    <li class="visit visit-<%= v.status %><%= v.overdue ? ' visit-overdue' : '' %><%= v === upNext || v.ongoing ? ' visit-now' : '' %>">
+      <div class="visit-when"><b class="mono"><%= faDigits(v.visit_time) %></b><span>تا <span class="mono"><%= faDigits(endTime(v.visit_time, v.duration_min)) %></span></span></div>
+      <div class="visit-body"><a class="visit-patient" href="/patients/<%= v.code %>"><%= v.first_name %> <%= v.last_name %></a><span class="visit-reason"><%= v.reason || 'بدون شرح' %></span></div>
+      <% if (v.status === 'done') { %><span class="chip chip-ok">انجام‌شده</span><% } else if (v.ongoing) { %><span class="chip chip-ok">در جریان</span><% } else if (v.overdue) { %><span class="chip chip-warn">زمان گذشته</span><% } else { %><span class="chip chip-info"><%= v === upNext ? 'نوبت بعدی' : 'در انتظار' %></span><% } %>
+    </li>
+    <% }) %>
+  </ul>
+  <% if (visitsToday.length > 30) { %><div class="card-foot"><span>و <%= fa(visitsToday.length - 30) %> ویزیت دیگر</span><a class="btn btn-sm" href="/visits">همه‌ی ویزیت‌های امروز</a></div><% } %>
+  <% } %>
+</section>

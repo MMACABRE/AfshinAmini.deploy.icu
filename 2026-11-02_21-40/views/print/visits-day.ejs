@@ -1,0 +1,28 @@
+<%# Day visit list (owner's request). Locals: day, visits (with number, bill, methods, accounts), totals. %>
+<% const m = (r) => formatMoney(r, cur); %>
+<%- include('top', { title: 'فهرست ویزیت‌های روز', params: [formatJalali(day), faDigits(visits.length) + ' ویزیت'], size: 'a4', back: '/visits' }) %>
+    <% if (!visits.length) { %>
+    <div class="doc-empty">در این روز ویزیتی ثبت نشده است.</div>
+    <% } else { %>
+    <table class="doc-table">
+      <thead><tr><th>ساعت</th><th>کد</th><th>بیمار</th><th class="num">مبلغ صورتحساب</th><th class="num">پرداخت‌شده</th><th>روش</th><th>حساب</th><th class="num">مانده</th></tr></thead>
+      <tbody>
+        <% visits.forEach((v) => { %>
+        <tr>
+          <td class="mono"><%= v.visit_time %></td>
+          <td class="mono"><%= v.code %></td>
+          <td><%= v.first_name %> <%= v.last_name %> <b class="nowrap">— ویزیت <%= faDigits(v.number) %></b></td>
+          <td class="num"><span class="money"><%= m(v.bill.owed) %></span></td>
+          <td class="num"><span class="money"><%= m(v.bill.paid) %></span></td>
+          <td><%= v.methods || '—' %></td>
+          <td><%= v.accounts || '—' %></td>
+          <td class="num"><span class="money"><%= v.bill.credit ? 'بستانکار ' + m(v.bill.credit) : m(v.bill.remaining) %></span></td>
+        </tr>
+        <% }) %>
+      </tbody>
+      <tfoot><tr><td colspan="3">جمع روز</td><td class="num"><span class="money"><%= m(totals.owed) %></span></td><td class="num"><span class="money"><%= m(totals.paid) %></span></td><td colspan="2"></td><td class="num"><span class="money"><%= m(totals.remaining) %></span></td></tr></tfoot>
+    </table>
+    <dl class="doc-totals"><div><dt>جمع صورتحساب‌ها</dt><dd><%= m(totals.owed) %></dd></div><div><dt>جمع مانده</dt><dd><%= m(totals.remaining) %></dd></div><div class="is-main"><dt>جمع پرداخت‌شده</dt><dd><%= m(totals.paid) %></dd></div></dl>
+    <% } %>
+    <p class="doc-note">«پرداخت‌شده» یعنی کل پرداخت هر ویزیت تا امروز، حتی اگر روز دیگری پرداخت شده باشد (مثل پیش‌پرداخت). درآمد همین روز در «گزارش مالی روزانه» است.</p>
+<%- include('bottom') %>

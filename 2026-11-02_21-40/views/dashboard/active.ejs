@@ -1,0 +1,6 @@
+<%# Stat: active patients. Locals: w (data.n, data.total), fa. %>
+<article class="card stat">
+  <div class="stat-label">بیماران فعال <span class="stat-icon"><svg class="icon"><use href="#i-users"/></svg></span></div>
+  <div class="stat-value"><%= fa(w.data.n) %></div>
+  <div class="stat-delta">از <%= fa(w.data.total) %> پرونده</div>
+</article>

@@ -1,0 +1,17 @@
+# DOMAIN comes from .env. A real domain gets a free Let's Encrypt certificate automatically.
+# DOMAIN=localhost gets a local self-signed certificate (for testing on your own computer).
+{$DOMAIN} {
+	encode zstd gzip
+
+	# The app accepts files up to 30 MB (Plan.md D19); this is just above that.
+	request_body {
+		max_size 35MB
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		-Server
+	}
+
+	reverse_proxy app:3000
+}

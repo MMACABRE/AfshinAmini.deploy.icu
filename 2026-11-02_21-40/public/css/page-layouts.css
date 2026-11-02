@@ -1,0 +1,198 @@
+/* Patient form layout editor «چیدمان فرم بیمار» (D52, variant A) and the dashboard edit mode (D54).
+   Logical properties only. Sage leads; terracotta marks only three things: the required mark, unsaved changes and
+   the drop spot. Sizes and spans come from classes and data attributes, never inline style attributes (CSP);
+   app.js may set el.style on the drag ghost. */
+
+/* ---------- shared pieces ---------- */
+.pl-grip {
+  flex: none; display: inline-grid; place-items: center; width: 28px; height: 32px; margin-inline-start: -6px;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-3); cursor: grab; touch-action: none;
+}
+.pl-grip:hover { background: var(--hover); color: var(--accent-text); }
+.pl-grip:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.pl-grip-ic { width: 10px; height: 16px; fill: currentColor; }
+.pl-dragging, .pl-dragging * { cursor: grabbing !important; user-select: none; }
+
+.pl-box-tools { display: inline-flex; align-items: center; gap: 4px; margin-inline-start: auto; flex: none; }
+.pl-req {
+  height: 26px; padding: 0 10px; border-radius: var(--radius-full); border: 1px solid var(--border); background: transparent;
+  font: 500 var(--fs-xs)/1 var(--font-body); color: var(--text-3); cursor: pointer;
+}
+.pl-req:hover { border-color: var(--terra-line); color: var(--terra-text); }
+.pl-req[aria-pressed="true"] { background: var(--terra-tint); border-color: var(--terra-line); color: var(--terra-text); }
+.pl-req[aria-pressed="true"]::before { content: "* "; font-weight: 700; }
+.pl-lock {
+  height: 26px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: var(--radius-full);
+  background: var(--mute-bg); color: var(--mute-fg); font-size: var(--fs-xs);
+}
+.pl-x {
+  width: 28px; height: 28px; display: inline-grid; place-items: center; border: 0; border-radius: 50%;
+  background: transparent; color: var(--text-3); cursor: pointer;
+}
+.pl-x .icon { width: 15px; height: 15px; }
+.pl-x:hover { background: var(--crit-bg); color: var(--crit-fg); }
+.pl-tag { flex: none; font-size: 11px; padding: 2px 8px; border-radius: var(--radius-full); background: var(--accent-tint); color: var(--accent-text); }
+@media (prefers-reduced-motion: no-preference) {
+  .pl-req, .pl-x, .pl-grip { transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease); }
+  .pl-req:active, .pl-x:active, .pl-src:active { transform: scale(.97); }
+}
+
+/* Drop spot and the item being carried. */
+.pl-ph {
+  border: 1.5px dashed var(--terra-line); border-radius: var(--radius); min-height: 56px;
+  background: color-mix(in srgb, var(--terra-pale) 70%, transparent);
+}
+.pl-cards > .pl-ph { min-height: 96px; border-radius: var(--radius-lg); }
+.pl-ghost-drag {
+  position: fixed; z-index: 100; pointer-events: none; margin: 0;
+  box-shadow: 0 22px 44px -18px rgba(40, 30, 10, .45), var(--shadow);
+  rotate: -.8deg; opacity: .96; background: var(--raised); border-radius: var(--radius);
+}
+.is-lifted { display: none !important; }
+.is-kb { outline: 2px solid var(--accent); outline-offset: 2px; background: var(--accent-tint) !important; }
+@media (prefers-reduced-motion: no-preference) {
+  .is-new { animation: pl-land 700ms cubic-bezier(.23, 1, .32, 1); }
+}
+@keyframes pl-land { 0% { box-shadow: 0 0 0 6px var(--accent-tint); background: var(--accent-tint); } 100% { box-shadow: 0 0 0 0 transparent; } }
+
+/* ---------- patient form editor ---------- */
+.pl-layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: var(--sp-5); align-items: start; }
+.pl-canvas .form-section { display: flex; flex-direction: column; gap: var(--sp-5); }
+.pl-cards { display: flex; flex-direction: column; gap: var(--sp-6); margin: 0; padding: 0; list-style: none; }
+.pl-card { display: flex; flex-direction: column; gap: var(--sp-3); min-width: 0; }
+.pl-card .form-grid { gap: var(--sp-3); }
+
+.pl-card-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); min-height: 40px; }
+.pl-card-head h2 { margin: 0; font: 600 var(--fs-lg)/1.3 var(--font-head); letter-spacing: var(--track-head); }
+.pl-count { color: var(--text-3); font-size: var(--fs-xs); }
+.pl-card.is-empty .pl-count { color: var(--terra-text); }
+.pl-card-move { margin-inline-start: auto; display: inline-flex; gap: 2px; }
+.pl-empty {
+  display: none; margin: 0; padding: var(--sp-4); border: 1.5px dashed var(--border-strong); border-radius: var(--radius);
+  color: var(--text-3); font-size: var(--fs-sm); text-align: center; grid-column: 1 / -1;
+}
+.pl-card.is-empty .pl-empty { display: block; }
+
+/* A box: the real input, greyed, under a quiet tool row. */
+.pl-box {
+  display: flex; flex-direction: column; gap: 6px; padding: 8px 10px 10px; margin: -2px; min-width: 0;
+  border: 1px solid transparent; border-radius: var(--radius);
+}
+.pl-box:hover, .pl-box:focus-within { border-color: var(--border); background: var(--raised); }
+.pl-box-top { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-height: 32px; }
+.pl-box-label { font: 500 var(--fs-sm)/1.3 var(--font-body); min-width: 0; }
+.pl-box[data-req] .pl-box-label::after { content: " *"; color: var(--terra); font-weight: 700; }
+.pl-box .pl-box-tools { opacity: .55; }
+.pl-box:hover .pl-box-tools, .pl-box:focus-within .pl-box-tools { opacity: 1; }
+@media (hover: none) { .pl-box .pl-box-tools { opacity: 1; } }
+@media (prefers-reduced-motion: no-preference) { .pl-box .pl-box-tools { transition: opacity var(--t-fast) var(--ease); } }
+/* The preview is the form-box partial in its disabled mode: hide its own label (the tool row names the box). */
+.pl-preview { pointer-events: none; min-width: 0; }
+.pl-preview > .field { margin: 0; }
+.pl-preview label:not(.check), .pl-preview legend, .pl-preview .hint { display: none; }
+.pl-preview .input, .pl-preview .select, .pl-preview .textarea { background: var(--surface); color: var(--text-3); opacity: 1; }
+.pl-preview .textarea { min-height: 72px; height: 72px; resize: none; }
+.pl-preview .check { color: var(--text-3); }
+
+/* Naming a new box or card where it lands. */
+.pl-name { order: 10; flex: 1 1 100%; display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); padding-block: 4px; min-width: 0; }
+.pl-name .input { height: 40px; flex: 1 1 160px; min-width: 0; font-size: 16px; }
+.pl-name-note { width: 100%; color: var(--text-3); font-size: var(--fs-xs); }
+.pl-name-err { width: 100%; margin: 0; color: var(--crit-fg); font-size: var(--fs-xs); }
+
+/* Fixed ends of the form: code on top, documents at the bottom. */
+.pl-fixed {
+  display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4); border-radius: var(--radius);
+  background: var(--surface-2); color: var(--text-2); font-size: var(--fs-sm);
+}
+.pl-fixed b { color: var(--text); font-weight: 600; }
+.pl-fixed .icon { width: 18px; height: 18px; color: var(--text-3); flex: none; }
+
+/* Tray «افزودن کادر»: sticky at the inline end, a bottom sheet under 900 px. */
+.pl-tray {
+  position: sticky; inset-block-start: calc(var(--topbar-h) + var(--sp-4));
+  max-height: calc(100vh - var(--topbar-h) - 120px); display: flex; flex-direction: column; overflow: hidden;
+}
+.pl-tray .card-head p { font-size: var(--fs-xs); }
+.pl-tray-body { overflow: auto; display: flex; flex-direction: column; gap: var(--sp-3); }
+.pl-tray h3 { margin: var(--sp-2) 0 0; font: 600 var(--fs-eyebrow)/1 var(--font-body); letter-spacing: var(--track-label); color: var(--text-3); }
+.pl-tray-none { margin: 0; color: var(--text-3); font-size: var(--fs-sm); }
+.pl-tray-close, .pl-fab { display: none; }
+.pl-src-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.pl-src {
+  width: 100%; min-height: 44px; display: flex; align-items: center; gap: var(--sp-3); padding: 0 var(--sp-3);
+  border: 1px solid transparent; border-radius: var(--radius-sm); background: transparent; color: var(--text);
+  font: 500 var(--fs-sm)/1.3 var(--font-body); text-align: start; cursor: grab; touch-action: pan-y;
+}
+.pl-src > .pl-grip-ic { color: var(--text-3); flex: none; }
+.pl-src:hover { background: var(--surface-2); border-color: var(--border); }
+.pl-src-add { margin-inline-start: auto; display: inline-grid; place-items: center; width: 26px; height: 26px; border-radius: 50%; background: var(--accent-tint); color: var(--accent-text); flex: none; }
+.pl-src-add .icon { width: 14px; height: 14px; }
+.pl-type-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.pl-src-type { border-color: var(--border-subtle); background: var(--surface); }
+.pl-src-type .pl-src-add { display: none; }
+.pl-type-ic {
+  flex: none; width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px;
+  background: var(--surface-2); color: var(--accent-text); font: 600 12px/1 var(--font-head);
+}
+.pl-new-card { justify-content: center; border-style: dashed; }
+
+/* Draft bar: always reachable at the foot of the screen. */
+.pl-draft {
+  position: sticky; inset-block-end: var(--sp-4); z-index: 20; margin-block-start: var(--sp-6);
+  display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); padding: var(--sp-3) var(--sp-4);
+  border: 1px solid var(--border); border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--surface) 92%, transparent); backdrop-filter: blur(14px); box-shadow: var(--shadow);
+}
+.pl-draft-state { display: inline-flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-sm); color: var(--text-2); }
+.pl-draft.is-dirty .pl-draft-state { color: var(--text); font-weight: 600; }
+.pl-draft.is-dirty .pl-draft-state::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--terra); box-shadow: 0 0 0 4px var(--terra-tint); flex: none; }
+.pl-draft-warn { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: var(--radius-full); background: var(--warn-bg); color: var(--warn-fg); font-size: var(--fs-xs); }
+.pl-draft-warn[hidden] { display: none; }
+.pl-draft-warn .icon { width: 14px; height: 14px; }
+.pl-draft-btns { margin-inline-start: auto; display: inline-flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2); }
+.pl-draft-btns form { display: contents; }
+.pl-foot { display: none; }
+.pl-err { margin-block-end: var(--sp-4); }
+
+@media (max-width: 900px) {
+  .pl-layout { grid-template-columns: minmax(0, 1fr); }
+  .pl-tray {
+    position: fixed; inset-inline: 0; inset-block-start: auto; z-index: 60; max-height: min(72vh, calc(100vh - 160px));
+    /* The sheet rests on the app tab bar (68 px plus the safe area), so its last row is never hidden under it. */
+    inset-block-end: calc(68px + env(safe-area-inset-bottom, 0px));
+    border-radius: 22px 22px 0 0; translate: 0 105%; visibility: hidden; box-shadow: 0 -18px 40px -20px rgba(40, 30, 10, .35);
+  }
+  /* Closed, the sheet is out of the tab order and the reading order too, not only off screen. */
+  .pl-tray-open .pl-tray { translate: 0 0; visibility: visible; }
+  .pl-tray-close { display: inline-grid; }
+  .pl-fab {
+    display: inline-flex; position: fixed; inset-inline-end: var(--sp-4); z-index: 25;
+    inset-block-end: calc(68px + 88px + env(safe-area-inset-bottom, 0px));
+    border-radius: var(--radius-full); box-shadow: var(--shadow);
+  }
+  .pl-draft { inset-block-end: calc(68px + var(--sp-3) + env(safe-area-inset-bottom, 0px)); }
+  /* Phones keep only the state, «انصراف» and «ذخیره» in the bar; the other two move to the foot of the page. */
+  .pl-draft .pl-wide, .pl-draft-warn { display: none; }
+  .pl-foot { display: flex; flex-wrap: wrap; gap: var(--sp-2); margin-block: var(--sp-4) var(--sp-8); }
+  .pl-foot-warn { width: 100%; }
+}
+@media (max-width: 900px) and (prefers-reduced-motion: no-preference) {
+  .pl-tray { transition: translate 260ms cubic-bezier(.32, .72, 0, 1), visibility 0s linear 260ms; }
+  .pl-tray-open .pl-tray { transition: translate 260ms cubic-bezier(.32, .72, 0, 1), visibility 0s; }
+}
+@media (max-width: 600px) {
+  .pl-card .form-grid { grid-template-columns: minmax(0, 1fr); }
+  .pl-grip { width: 44px; height: 44px; margin-inline-start: -10px; }
+  .pl-x { width: 44px; height: 44px; }
+  .pl-req, .pl-lock { height: 44px; padding-inline: 14px; }
+  .pl-card-move .btn { min-width: 44px; min-height: 44px; }
+  .pl-draft { flex-wrap: nowrap; padding: var(--sp-2) var(--sp-3); }
+  .pl-draft-state { flex: 1; min-width: 0; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; font-size: var(--fs-xs); }
+  .pl-draft-btns { flex-wrap: nowrap; }
+  .pl-type-list { grid-template-columns: minmax(0, 1fr); }
+}
+
+
+/* Inside the editor the hidden attribute always wins over a class that sets display. */
+.pl-editor [hidden] { display: none !important; }

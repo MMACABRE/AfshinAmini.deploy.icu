@@ -1,0 +1,33 @@
+/* SMS screens (D32+). Builds on tokens and components; logical properties only. */
+/* Small helpers the finance pages also use (each page loads one page stylesheet, so they are repeated here). */
+.mt-6 { margin-top: var(--sp-6); }
+.mb-4 { margin-bottom: var(--sp-4); }
+.text-xs-muted { font-size: var(--fs-xs); color: var(--text-3); }
+.sub-nav { flex-wrap: wrap; }
+.sub-nav a, .sub-nav span { padding: 8px 16px; }
+.filter-bar { display: flex; align-items: flex-end; gap: var(--sp-3); flex-wrap: wrap; }
+.filter-bar .field { flex: 1 1 140px; }
+.filter-bar .filter-go { flex: 0 0 auto; }
+.inline-form { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.inline-form .input { flex: 1 1 110px; min-width: 0; width: auto; }
+.user-actions { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.sms-balance { margin: 0 0 var(--sp-4); font-size: var(--fs-sm); }
+.sms-text { max-width: 36ch; overflow-wrap: anywhere; font-size: var(--fs-sm); }
+.sms-reason { display: block; margin-top: var(--sp-1); }
+.sms-text + td form, .table td form { margin-top: var(--sp-2); }
+
+.sms-editor .textarea { min-height: 96px; }
+.token-row { display: flex; align-items: center; gap: var(--sp-2); flex-wrap: wrap; }
+.token-row .btn[draggable="true"] { cursor: grab; }
+.sms-count { font-size: var(--fs-xs); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.sms-sample { margin: 0; padding: var(--sp-3) var(--sp-4); border: 1px dashed var(--border); border-radius: var(--radius); background: var(--surface-2); font-size: var(--fs-sm); line-height: 1.8; color: var(--text-2); }
+
+.sms-facts { display: grid; gap: var(--sp-3); margin: 0; }
+.sms-facts > div { display: grid; grid-template-columns: minmax(0, 11rem) minmax(0, 1fr); gap: var(--sp-3); }
+.sms-facts dt { color: var(--text-3); font-size: var(--fs-sm); }
+.sms-facts dd { margin: 0; min-width: 0; }
+
+@media (max-width: 899px) {
+  .sms-facts > div { grid-template-columns: minmax(0, 1fr); gap: var(--sp-1); }
+  .sms-text { max-width: none; }
+}

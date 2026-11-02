@@ -1,0 +1,13 @@
+<%# SMS attention card. Locals: w (data: noKey, low, failed), fa. %>
+<% const sms = w.data; %>
+<section class="card alerts-card" aria-labelledby="sms-h">
+  <div class="card-head">
+    <div><h2 id="sms-h">پیامک</h2><p>نیاز به توجه</p></div>
+    <a class="btn btn-sm" href="/sms">گزارش پیامک</a>
+  </div>
+  <ul class="alert-list">
+    <% if (sms.noKey) { %><li class="alert-row alert-crit"><span class="alert-dot" aria-hidden="true"></span><a href="/sms/settings">کلید پیامک ثبت نشده یا خوانده نمی‌شود</a></li><% } %>
+    <% if (sms.low !== null) { %><li class="alert-row alert-crit"><span class="alert-dot" aria-hidden="true"></span><a href="/sms">اعتبار پیامک رو به پایان است</a><span><%= fa(sms.low) %> پیام مانده</span></li><% } %>
+    <% if (sms.failed) { %><li class="alert-row alert-warn"><span class="alert-dot" aria-hidden="true"></span><a href="/sms?status=failed"><%= fa(sms.failed) %> پیام در ۲۴ ساعت گذشته ناموفق بود</a></li><% } %>
+  </ul>
+</section>

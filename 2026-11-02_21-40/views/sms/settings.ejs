@@ -1,0 +1,113 @@
+<%# SMS settings. Locals: settings, values (what the form shows), errors, notice, keyError, key ({ hint, usable } | null), ready,
+    planned, LEADS, LEAD_KEYS, canKey, TOKENS_SAMPLE, sample. %>
+<%
+const v = (k) => (values[k] != null ? values[k] : '');
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+const err = (k) => errors[k] ? '<p class="field-error" role="alert">' + esc(errors[k]) + '</p>' : '';
+const isOn = v('sms_enabled') === '1';
+const wasOn = ready.on;
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'تنظیمات پیامک', pageCss: 'page-sms' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb"><a href="/sms">پیامک</a> / تنظیمات</div><h1>تنظیمات پیامک</h1>
+        <p>یادآوری ویزیت‌ها خودکار و در بازه‌ی ۸ صبح تا ۹ شب ارسال می‌شود. متن پیامک فقط نام، تاریخ و ساعت را دارد و اطلاعات پزشکی در آن نیست.</p></div></div>
+      <%- include('nav', { here: 'settings' }) %>
+      <% if (notice) { %><div class="callout callout-info mb-4" role="status"><svg class="icon"><use href="#i-check"/></svg><span><%= notice %></span></div><% } %>
+
+      <section class="card" aria-labelledby="gen-h">
+        <div class="card-head"><h2 id="gen-h">ارسال و زمان‌بندی</h2></div>
+        <form class="card-body form-grid" method="post" action="/sms/settings">
+          <div class="field span-2">
+            <label class="check"><input type="checkbox" name="sms_enabled" value="1"<%- isOn ? ' checked' : '' %>><span>ارسال پیامک فعال باشد</span></label>
+            <% if (!wasOn) { %>
+            <input type="hidden" name="expected_count" value="<%= planned %>">
+            <label class="check"><input type="checkbox" name="confirm" value="1"><span>می‌دانم که روشن کردن پیامک برای <b><%= faDigits(planned) %></b> ویزیتِ برنامه‌ریزی‌شده یادآوری می‌فرستد.</span></label>
+            <% } %>
+            <%- err('sms_enabled') %>
+          </div>
+          <div class="field">
+            <label for="s-line">شماره‌ی خط فرستنده</label>
+            <input id="s-line" class="input" type="text" name="sms_line" value="<%= v('sms_line') %>" maxlength="20" dir="ltr" autocomplete="off" required>
+            <span class="hint">برای وب‌سرویس معمولاً ۹۰۰۰۸۳۶۱</span><%- err('sms_line') %>
+          </div>
+          <div class="field">
+            <label for="s-lead">زمان پیش‌فرض یادآوری</label>
+            <select id="s-lead" class="select" name="sms_lead">
+              <% LEAD_KEYS.forEach((k) => { %><option value="<%= k %>"<%- v('sms_lead') === k ? ' selected' : '' %>><%= LEADS[k] %></option><% }) %>
+            </select>
+            <span class="hint">منشی می‌تواند برای هر ویزیت آن را عوض کند.</span><%- err('sms_lead') %>
+          </div>
+          <div class="field">
+            <label for="s-hour">ساعت ارسال یادآوری «روز قبل»</label>
+            <input id="s-hour" class="input" type="text" name="sms_hour" value="<%= v('sms_hour') %>" inputmode="numeric" dir="ltr" maxlength="2" required>
+            <span class="hint">عددی از ۸ تا ۲۱</span><%- err('sms_hour') %>
+          </div>
+          <div></div>
+
+          <div class="field span-2 sms-editor">
+            <label for="s-tpl">متن یادآوری</label>
+            <textarea id="s-tpl" class="textarea" name="sms_template" rows="3" maxlength="300" dir="rtl" data-sms-template
+              data-sample-name="<%= TOKENS_SAMPLE.name %>" data-sample-date="<%= TOKENS_SAMPLE.date %>" data-sample-time="<%= TOKENS_SAMPLE.time %>"><%= v('sms_template') %></textarea>
+            <div class="token-row" data-sms-tokens hidden>
+              <span class="hint">بکشید یا بزنید تا در متن بنشیند:</span>
+              <button class="btn btn-sm" type="button" draggable="true" data-token="{نام}">نام</button>
+              <button class="btn btn-sm" type="button" draggable="true" data-token="{تاریخ}">تاریخ</button>
+              <button class="btn btn-sm" type="button" draggable="true" data-token="{ساعت}">ساعت</button>
+            </div>
+            <span class="hint">بدون جاوااسکریپت هم می‌توانید {نام}، {تاریخ} و {ساعت} را تایپ کنید. {تاریخ} و {ساعت} الزامی‌اند.</span>
+            <span class="sms-count" data-sms-count aria-live="polite"></span>
+            <p class="sms-sample">نمونه: <span data-sms-sample><%= sample %></span></p>
+            <%- err('sms_template') %>
+          </div>
+
+          <% if (canKey) { %>
+          <div class="field">
+            <label for="s-alert">شماره‌ی موبایل هشدار کمبود اعتبار</label>
+            <input id="s-alert" class="input" type="text" name="sms_alert_phone" value="<%= v('sms_alert_phone') %>" inputmode="tel" dir="ltr" maxlength="20" autocomplete="off">
+            <span class="hint">وقتی اعتبار به حد پایین برسد، یک پیامک به این شماره می‌رود. خالی یعنی بدون پیامک هشدار.</span><%- err('sms_alert_phone') %>
+          </div>
+          <div class="field">
+            <label for="s-low">حد هشدار (تعداد پیام باقی‌مانده)</label>
+            <input id="s-low" class="input" type="text" name="sms_low_threshold" value="<%= v('sms_low_threshold') %>" inputmode="numeric" dir="ltr" maxlength="4">
+            <span class="hint">عددی از ۱ تا ۱۰۰۰</span><%- err('sms_low_threshold') %>
+          </div>
+          <% } %>
+          <div class="form-actions span-2"><button class="btn btn-primary" type="submit">ذخیره‌ی تنظیمات</button></div>
+        </form>
+      </section>
+
+      <% if (canKey) { %>
+      <section class="card mt-6" aria-labelledby="key-h">
+        <div class="card-head"><div><h2 id="key-h">کلید پیامک</h2><p>کلید حساب کلینیک در ایران‌پیامک (پنل ← وب‌سرویس ← لیست کلیدهای دسترسی). کلید رمزنگاری‌شده ذخیره می‌شود و دوباره نشان داده نمی‌شود.</p></div></div>
+        <div class="card-body stack">
+          <% if (key) { %>
+          <p>کلید ثبت‌شده: <span class="mono">••••<%= key.hint %></span><% if (!key.usable) { %> <span class="chip chip-crit">قابل خواندن نیست؛ کلید را دوباره وارد کنید</span><% } else { %> <span class="chip chip-ok">فعال</span><% } %></p>
+          <% } else { %>
+          <p class="muted">کلیدی ثبت نشده است.</p>
+          <% } %>
+          <form class="inline-form" method="post" action="/sms/key">
+            <label class="sr-only" for="k-key">کلید جدید</label>
+            <input id="k-key" class="input" type="password" name="api_key" autocomplete="off" dir="ltr" placeholder="کلید را بچسبانید" required>
+            <button class="btn btn-primary" type="submit"><%= key ? 'تغییر کلید' : 'ثبت کلید' %></button>
+          </form>
+          <% if (keyError) { %><p class="field-error" role="alert"><%= keyError %></p><% } %>
+          <% if (key) { %>
+          <div class="user-actions">
+            <form method="post" action="/sms/test"><button class="btn" type="submit">پیامک آزمایشی</button></form>
+            <form method="post" action="/sms/key"><input type="hidden" name="action" value="remove"><button class="btn btn-danger" type="submit">حذف کلید</button></form>
+          </div>
+          <p class="hint">پیامک آزمایشی به شماره‌ی هشدار می‌رود؛ نخست آن شماره را بالا ذخیره کنید.</p>
+          <% } %>
+        </div>
+      </section>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

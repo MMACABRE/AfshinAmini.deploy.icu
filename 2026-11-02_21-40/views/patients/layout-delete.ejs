@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'حذف کادر' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <section class="card">
+        <form class="card-body form-section" method="post" action="/patients/layout/boxes/<%= box.id %>/delete">
+          <h1>حذف کادر</h1>
+          <p>کادر «<b><%= box.label %></b>» برای همیشه حذف می‌شود و از فرم بیمار هم می‌رود.</p>
+          <p class="muted">هیچ بیماری مقداری در این کادر ندارد. شماره‌ی کادر دوباره داده نمی‌شود.</p>
+          <div class="form-actions">
+            <button class="btn btn-danger" type="submit"><svg class="icon"><use href="#i-trash"/></svg>حذف کادر</button>
+            <a class="btn" href="/patients/layout#box-<%= box.id %>">انصراف</a>
+          </div>
+        </form>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

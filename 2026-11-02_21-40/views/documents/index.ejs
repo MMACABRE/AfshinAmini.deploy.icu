@@ -1,0 +1,89 @@
+<%
+const { CATEGORY } = labels;
+const full = patient.first_name + ' ' + patient.last_name;
+const v = (k) => (values && values[k] !== undefined && values[k] !== null ? String(values[k]) : '');
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const err = (k) => errors[k] ? '<p class="field-error" role="alert">' + esc(errors[k]) + '</p>' : '';
+const catOptions = (selected, withBlank) => (withBlank ? '<option value="">همه‌ی طبقه‌بندی‌ها</option>' : '')
+  + Object.entries(CATEGORY).map(([k, l]) => '<option value="' + k + '"' + (selected === k ? ' selected' : '') + '>' + l + '</option>').join('');
+const base = '/patients/' + patient.code;
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'اسناد ' + full, pageCss: 'page-documents' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><a href="/patients" lang="en">Patients</a> / <a href="<%= base %>"><%= full %></a> / <span lang="en">Documents</span></div>
+          <h1>اسناد و پیوست‌ها</h1>
+          <p><span class="mono"><%= patient.code %></span> · پرونده‌ی بیمار <%= full %></p>
+        </div>
+      </div>
+
+      <% if (can('documents', 2)) { %>
+      <section class="card" aria-labelledby="upload-h">
+        <div class="card-head"><h2 id="upload-h">بارگذاری سند</h2></div>
+        <form class="card-body upload-form" method="post" action="<%= base %>/documents" enctype="multipart/form-data">
+          <% if (error) { %><div class="info-box upload-error" role="alert"><%= error %></div><% } %>
+          <%- include('../partials/dropzone', { id: 'doc-file' }) %>
+          <div class="upload-fields">
+            <div class="field">
+              <label for="doc-category">طبقه‌بندی</label>
+              <select id="doc-category" class="select" name="category" required><%- catOptions(v('category') || 'other', false) %></select>
+              <%- err('category') %>
+            </div>
+            <div class="field">
+              <label for="doc-date">تاریخ سند</label>
+              <input id="doc-date" class="input" type="text" name="doc_date" value="<%= v('doc_date') %>" placeholder="۱۴۰۳/۰۵/۱۲" inputmode="numeric" dir="ltr" data-jalali>
+              <%- err('doc_date') %>
+            </div>
+            <div class="field span-2">
+              <label for="doc-title">عنوان سند</label>
+              <input id="doc-title" class="input" type="text" name="title" maxlength="200" value="<%= v('title') %>" placeholder="مثلاً: نتیجه‌ی آزمایش خون">
+              <%- err('title') %>
+            </div>
+            <div class="field span-2">
+              <label for="doc-notes">یادداشت</label>
+              <textarea id="doc-notes" class="textarea" name="notes" maxlength="2000" placeholder="یادداشت‌های داخلی درباره‌ی این سند"><%= v('notes') %></textarea>
+              <%- err('notes') %>
+            </div>
+            <div class="form-actions span-2">
+              <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-upload"/></svg>ثبت و بارگذاری</button>
+            </div>
+          </div>
+        </form>
+      </section>
+      <% } %>
+
+      <section class="card" aria-labelledby="docs-h">
+        <div class="card-head"><h2 id="docs-h">اسناد</h2><p><%= faDigits(docs.length) %> فایل</p></div>
+        <form class="toolbar" method="get" action="<%= base %>/documents" role="search">
+          <div class="input-group">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input class="input" type="search" name="q" value="<%= q %>" placeholder="جستجوی اسناد" aria-label="جستجوی اسناد">
+          </div>
+          <select class="select" name="category" aria-label="فیلتر بر اساس طبقه‌بندی">
+            <%- catOptions(category, true) %>
+            <option value="unclassified"<%- category === 'unclassified' ? ' selected' : '' %>>طبقه‌بندی نشده</option>
+          </select>
+          <button class="btn btn-sm" type="submit">اعمال فیلتر</button>
+        </form>
+
+        <% if (docs.length === 0) { %>
+        <div class="card-body"><p class="muted">سندی پیدا نشد.</p></div>
+        <% } else { %>
+        <div class="doc-gallery card-body">
+          <% docs.forEach((d) => { %>
+          <%- include('../partials/doc-tile', { d, code: patient.code, back: 'documents', classify: true }) %>
+          <% }) %>
+        </div>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

@@ -1,0 +1,116 @@
+<%#
+  One box of the patient form (D52, D53). Locals:
+  box: a built-in catalogue entry ({ id, ... }) or a custom box row (has `type`);
+  required: the required mark; v, err: value and error getters of the form; suggestions: datalist values;
+  disabled: editor preview only, so the input gets no name, no error text and is not focusable;
+  nextCode, options: for the built-in `code` box (new patient) and the `doc_category` box.
+%><%
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const off = disabled ? ' disabled tabindex="-1"' : '';
+const nameAttr = (name) => (disabled ? '' : ' name="' + name + '"');
+const errOf = (name) => (disabled ? undefined : err(name));
+const fieldErr = (name) => (errOf(name) ? '<p class="field-error" id="f-' + name + '-err" role="alert">' + esc(errOf(name)) + '</p>' : '');
+const describedBy = (name) => (errOf(name) ? ' aria-invalid="true" aria-describedby="f-' + name + '-err"' : '');
+// The full-width mark comes from the catalogue (`full` on the box: BOXES, CUSTOM_TYPES), never from the caller.
+const span = box.full ? ' span-2' : '';
+// One text field. `opts`: type, dir, inputmode, placeholder, hint, required, maxlength, autocomplete, list, jalali.
+const field = (name, label, opts = {}) => {
+  const id = 'f-' + name;
+  let h = '<div class="field' + span + '">';
+  h += '<label for="' + id + '">' + label + (opts.required ? ' <span class="muted">(الزامی)</span>' : '') + '</label>';
+  h += '<input class="input" type="' + (opts.type || 'text') + '" id="' + id + '"' + nameAttr(name) + ' value="' + esc(v(name)) + '"';
+  if (opts.dir) h += ' dir="' + opts.dir + '"';
+  if (opts.inputmode) h += ' inputmode="' + opts.inputmode + '"';
+  if (opts.placeholder) h += ' placeholder="' + opts.placeholder + '"';
+  if (opts.maxlength) h += ' maxlength="' + opts.maxlength + '"';
+  if (opts.autocomplete) h += ' autocomplete="' + opts.autocomplete + '"';
+  if (opts.list) h += ' list="' + id + '-list" autocomplete="off"';
+  if (opts.jalali) h += ' data-jalali';
+  h += describedBy(name) + off + '>';
+  // Native suggestion list: earlier values typed into this field, picked from a dropdown or typed fresh.
+  if (opts.list && !disabled) h += '<datalist id="' + id + '-list">' + opts.list.map((o) => '<option value="' + esc(o) + '">').join('') + '</datalist>';
+  if (opts.hint && !errOf(name)) h += '<span class="hint">' + opts.hint + '</span>';
+  return h + fieldErr(name) + '</div>';
+};
+const select = (name, label, options, required = false) => {
+  const id = 'f-' + name;
+  let h = '<div class="field"><label for="' + id + '">' + label + (required ? ' <span class="muted">(الزامی)</span>' : '') + '</label>';
+  h += '<select class="select" id="' + id + '"' + nameAttr(name) + describedBy(name) + off + '>';
+  options.forEach(([val, text]) => { h += '<option value="' + esc(val) + '"' + (String(v(name)) === val ? ' selected' : '') + '>' + text + '</option>'; });
+  h += '</select>';
+  return h + fieldErr(name) + '</div>';
+};
+const area = (name, label, rows, required = false) => {
+  const id = 'f-' + name;
+  let h = '<div class="field' + span + '"><label for="' + id + '">' + label + (required ? ' <span class="muted">(الزامی)</span>' : '') + '</label>';
+  h += '<textarea class="textarea" id="' + id + '"' + nameAttr(name) + ' rows="' + rows + '"' + describedBy(name) + off + '>' + esc(v(name)) + '</textarea>';
+  return h + fieldErr(name) + '</div>';
+};
+// Yes / no / unknown as three radio buttons in a fieldset. The empty value is «نامشخص».
+const yesNo = (name, label, required) => {
+  const id = 'f-' + name;
+  let h = '<fieldset class="field" id="' + id + '"' + describedBy(name) + '>';
+  h += '<legend>' + label + (required ? ' <span class="muted">(الزامی)</span>' : '') + '</legend>';
+  [['1', 'بله'], ['0', 'خیر'], ['', 'نامشخص']].forEach(([val, text]) => {
+    h += '<label class="check"><input type="radio"' + nameAttr(name) + ' value="' + val + '"' + (String(v(name)) === val ? ' checked' : '') + off + '><span>' + text + '</span></label>';
+  });
+  return h + fieldErr(name) + '</fieldset>';
+};
+
+// Built-in boxes: today's markup for each id.
+const builtinBox = (id, required) => {
+  switch (id) {
+    case 'code': return field('code', 'کد بیمار (اختیاری)', { dir: 'ltr', placeholder: nextCode, maxlength: 20, autocomplete: 'off', hint: 'خالی بماند تا کد <span class="mono">' + nextCode + '</span> خودکار داده شود؛ یا کد دلخواه مثل <span class="mono">P-000123</span> یا فقط عدد آن' });
+    case 'doc_category': return select('doc_category', 'طبقه‌بندی مدارک', options);
+    case 'first_name': return field('first_name', 'نام', { required, maxlength: 80, autocomplete: 'off' });
+    case 'last_name': return field('last_name', 'نام خانوادگی', { required, maxlength: 80, autocomplete: 'off' });
+    case 'father_name': return field('father_name', 'نام پدر', { required, maxlength: 80, autocomplete: 'off' });
+    case 'national_id': return field('national_id', 'کد ملی', { required, dir: 'ltr', inputmode: 'numeric', maxlength: 10, hint: '۱۰ رقم' });
+    case 'birth_date': return field('birth_date', 'تاریخ تولد', { required, dir: 'ltr', inputmode: 'numeric', placeholder: '۱۴۰۳/۰۵/۱۲', hint: 'تاریخ شمسی، مثل ۱۴۰۳/۰۵/۱۲', jalali: true });
+    case 'sex': return select('sex', 'جنسیت', [['', 'مشخص نشده'], ['female', 'زن'], ['male', 'مرد']], required);
+    case 'status': return select('status', 'وضعیت', Object.entries(labels.STATUS).map(([k, s]) => [k, s.label]), required);
+    case 'visit_reason': return field('visit_reason', 'علت مراجعه', { required, maxlength: 1000, list: suggestions.visit_reason, hint: 'از فهرست انتخاب کنید یا متن تازه بنویسید' });
+    case 'referral': return field('referral', 'معرف', { required, maxlength: 120, list: suggestions.referral, hint: 'از فهرست انتخاب کنید یا نام تازه بنویسید' });
+    case 'phone': return field('phone', 'تلفن همراه', { required, dir: 'ltr', inputmode: 'tel', maxlength: 20, autocomplete: 'off' });
+    case 'email': return field('email', 'ایمیل', { required, type: 'email', dir: 'ltr', maxlength: 120, autocomplete: 'off' });
+    case 'city': return field('city', 'شهر', { required, maxlength: 100 });
+    case 'sms_optout': return '<div class="field">'
+      + (disabled ? '' : '<input type="hidden" name="sms_optout_form" value="1">')
+      + '<label class="check"><input type="checkbox"' + nameAttr('sms_optout') + ' value="1"' + (Number(v('sms_optout')) === 1 ? ' checked' : '') + off + '><span>دریافت نکردن پیامک</span></label>'
+      + '<span class="hint">اگر تیک بخورد، یادآوری و پیام گروهی برای این بیمار نمی‌رود.</span>'
+      + '</div>';
+    case 'address': return area('address', 'نشانی', 3, required);
+    case 'emergency_name': return field('emergency_name', 'نام', { required, maxlength: 100 });
+    case 'emergency_phone': return field('emergency_phone', 'تلفن', { required, dir: 'ltr', inputmode: 'tel', maxlength: 20 });
+    case 'emergency_relation': return field('emergency_relation', 'نسبت', { required, maxlength: 60 });
+    case 'insurance_name': return field('insurance_name', 'نوع بیمه', { required, maxlength: 100 });
+    case 'insurance_number': return field('insurance_number', 'شماره بیمه', { required, dir: 'ltr', maxlength: 60 });
+    case 'blood_type': return select('blood_type', 'گروه خونی', [['', 'مشخص نشده'], ...['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'].map((b) => [b, b])], required);
+    case 'blood_pressure': return field('blood_pressure', 'فشار خون', { required, dir: 'ltr', placeholder: '120/80', maxlength: 20 });
+    case 'height_cm': return field('height_cm', 'قد (سانتی‌متر)', { required, dir: 'ltr', inputmode: 'decimal' });
+    case 'weight_kg': return field('weight_kg', 'وزن (کیلوگرم)', { required, dir: 'ltr', inputmode: 'decimal' });
+    case 'allergies': return field('allergies', 'حساسیت‌ها', { required, hint: 'با ویرگول جدا کنید، مثل پنی‌سیلین، صدف' });
+    case 'conditions': return field('conditions', 'بیماری‌های زمینه‌ای', { required, hint: 'با ویرگول جدا کنید' });
+    case 'medical_notes': return area('medical_notes', 'یادداشت‌های بالینی', 5, required);
+    default: return '';
+  }
+};
+// A custom box by type (D53). Its input is named c_<id>, so values and errors come back under that name.
+const customBox = (box, required) => {
+  const name = 'c_' + box.id;
+  const label = esc(box.label);
+  switch (box.type) {
+    case 'long_text': return area(name, label, 3, required);
+    case 'number': return field(name, label, { required, dir: 'ltr', inputmode: 'decimal' });
+    case 'date': return field(name, label, { required, dir: 'ltr', inputmode: 'numeric', placeholder: '۱۴۰۳/۰۵/۱۲', hint: 'تاریخ شمسی، مثل ۱۴۰۳/۰۵/۱۲', jalali: true });
+    case 'choice': {
+      // A hidden choice stays listed when this patient already holds it, so the saved value is not lost.
+      const offered = box.choices.filter((c) => !c.hidden || String(c.id) === String(v(name)));
+      return select(name, label, [['', 'انتخاب نشده'], ...offered.map((c) => [String(c.id), esc(c.label)])], required);
+    }
+    case 'yes_no': return yesNo(name, label, required);
+    default: return field(name, label, { required, maxlength: 200 });
+  }
+};
+const html = box.type !== undefined ? customBox(box, required) : builtinBox(box.id, required);
+%><%- html %>

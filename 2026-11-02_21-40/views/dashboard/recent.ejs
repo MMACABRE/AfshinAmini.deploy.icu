@@ -1,0 +1,27 @@
+<%# Recently updated patients. Locals: w (data: rows), fa. %>
+<% const recent = w.data; const initials = (p) => Array.from(p.first_name)[0] + Array.from(p.last_name)[0]; %>
+<section class="card" aria-labelledby="rp-h">
+  <div class="card-head">
+    <div><h2 id="rp-h">آخرین پرونده‌های به‌روزشده</h2><p>۸ پرونده‌ی اخیر</p></div>
+    <a class="btn btn-sm" href="/patients">فهرست بیماران</a>
+  </div>
+  <% if (recent.length === 0) { %>
+    <div class="card-body"><p class="muted">هنوز بیماری ثبت نشده است.</p></div>
+  <% } else { %>
+  <div class="table-wrap">
+    <table class="table">
+      <thead><tr><th scope="col">بیمار</th><th scope="col">کد</th><th scope="col">آخرین تغییر</th><th scope="col">وضعیت</th></tr></thead>
+      <tbody>
+        <% recent.forEach((p) => { %>
+        <tr>
+          <td data-label="بیمار"><div class="person"><span class="avatar avatar-sm"><%= initials(p) %></span><b><a href="/patients/<%= p.code %>"><%= p.first_name %> <%= p.last_name %></a></b></div></td>
+          <td data-label="کد" class="mono"><%= p.code %></td>
+          <td data-label="آخرین تغییر"><%= formatJalali(localDay(p.updated_at)) %></td>
+          <td data-label="وضعیت"><span class="chip <%= labels.STATUS[p.status].chip %>"><%= labels.STATUS[p.status].label %></span></td>
+        </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  </div>
+  <% } %>
+</section>

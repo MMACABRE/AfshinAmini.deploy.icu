@@ -1,0 +1,84 @@
+<%# «حذف داده‌ها» (owner request 2026-10-25). Locals: counts (src/lib/wipe.js wipeCounts), kinds, error, chosen,
+    result ({ kinds, removed, trashed, fileError, backup } after a wipe). %>
+<%
+const KIND = {
+  patients: ['بیماران و پرونده‌ها', 'همه‌ی بیماران با ویزیت‌ها، داروها، مدارک، عکس‌ها، پیامک‌ها و همه‌ی صورتحساب‌ها و پرداخت‌هایشان. مدارک و امور مالی هم با این گزینه حذف می‌شوند.'],
+  documents: ['مدارک و تصاویر', 'همه‌ی مدارک پزشکی و عکس‌های بیماران. خود پرونده‌ها می‌مانند.'],
+  finance: ['امور مالی', 'همه‌ی پرداخت‌ها، بازپرداخت‌ها و انتقال‌های اعتبار، و همه‌ی خدمات و کالاهای ثبت‌شده در صورتحساب‌ها با تخفیف‌هایشان. خود ویزیت‌ها، حساب‌ها، روش‌های پرداخت و فهرست قیمت خدمات می‌مانند.'],
+  storage: ['انبار', 'همه‌ی بسته‌ها، شمارش‌ها و گردش کالا، و کالاهایی که در هیچ صورتحسابی نیامده‌اند. کالایی که در صورتحساب آمده با موجودی صفر در فهرست می‌ماند.'],
+};
+const n = (x) => faDigits(x.toLocaleString('en-US').replace(/,/g, '٬'));
+const COUNT = {
+  patients: (c) => `${n(c.patients)} بیمار، ${n(c.visits)} ویزیت`,
+  documents: (c) => `${n(c.documents)} مدرک، ${n(c.photos)} عکس`,
+  finance: (c) => `${n(c.payments)} پرداخت، ${n(c.lines)} ردیف صورتحساب`,
+  storage: (c) => `${n(c.lots)} بسته، ${n(c.moves)} ردیف گردش، از ${n(c.items)} کالا`,
+};
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'حذف داده‌ها', pageCss: 'page-admin' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/admin/users">مدیریت کاربران</a> / حذف داده‌ها</div>
+      <div class="page-head">
+        <div>
+          <h1>حذف داده‌ها</h1>
+          <p>یک یا چند دسته از داده‌های سایت را یک‌جا پاک کنید. کاربران، دسترسی‌ها، تنظیمات و گزارش فعالیت هرگز پاک نمی‌شوند.</p>
+        </div>
+      </div>
+
+      <% if (result) { %>
+      <div class="callout callout-info" role="status">
+        <svg class="icon"><use href="#i-check"/></svg>
+        <span>حذف شد: <%= result.kinds.map((k) => KIND[k][0]).join('، ') %>.
+          نسخه‌ی پشتیبان پیش از حذف در پوشه‌ی <span class="mono">data/backups</span> روی سرور با نام <span class="mono"><%= result.backup %></span> ذخیره شد<% if (result.trashed) { %> و پوشه‌ی فایل‌های بیماران به <span class="mono">data/trash/<%= result.trashed %></span> منتقل شد<% } %>؛ مدیر سرور می‌تواند آن‌ها را برگرداند.</span>
+      </div>
+      <% if (result.fileError) { %>
+      <div class="callout callout-crit" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span>ردیف‌ها حذف شدند، اما پوشه‌ی فایل‌های بیماران جابه‌جا نشد. از مدیر سرور بخواهید پوشه‌ی <span class="mono">data/patients</span> را بررسی کند.</span></div>
+      <% } %>
+      <% } %>
+
+      <% if (error) { %><div class="callout callout-crit" role="alert"><svg class="icon"><use href="#i-alert"/></svg><span><%= error %></span></div><% } %>
+
+      <section class="card" aria-labelledby="wipe-h">
+        <form class="card-body form-section" method="post" action="/admin/wipe">
+          <h2 id="wipe-h">چه چیزی حذف شود؟</h2>
+          <fieldset class="wipe-kinds">
+            <legend class="sr-only">دسته‌های داده</legend>
+            <% kinds.forEach((k) => { %>
+            <label class="check wipe-kind">
+              <input type="checkbox" name="kind" value="<%= k %>"<%- chosen.includes(k) ? ' checked' : '' %>>
+              <span><b><%= KIND[k][0] %></b> <span class="hint">(<%= COUNT[k](counts[k]) %>)</span><br><span class="muted"><%= KIND[k][1] %></span></span>
+            </label>
+            <% }) %>
+          </fieldset>
+
+          <div class="callout callout-crit">
+            <svg class="icon"><use href="#i-alert"/></svg>
+            <span>این کار از سایت برنمی‌گردد. پیش از حذف، یک نسخه‌ی کامل پشتیبان روی سرور ساخته می‌شود و فایل‌های بیماران به سطل زباله‌ی سرور می‌روند؛ برگرداندن آن‌ها فقط کار مدیر سرور است.</span>
+          </div>
+
+          <div class="form-grid">
+            <div class="field">
+              <label for="wipe-confirm">برای تأیید، کلمه‌ی «حذف» را بنویسید</label>
+              <input id="wipe-confirm" class="input" type="text" name="confirm" autocomplete="off" required>
+            </div>
+            <div class="field">
+              <label for="wipe-pw">رمز عبور خودتان</label>
+              <input id="wipe-pw" class="input" type="password" name="password" autocomplete="current-password" dir="ltr" required>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-danger" type="submit"><svg class="icon"><use href="#i-trash"/></svg>حذف همیشگی از سایت</button>
+            <a class="btn" href="/admin/users">انصراف</a>
+          </div>
+        </form>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

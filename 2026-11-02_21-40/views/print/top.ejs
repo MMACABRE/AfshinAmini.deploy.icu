@@ -1,0 +1,31 @@
+<%# Shared frame of every PDF document (D30, ticket #8): letterhead, thin sage border with corner ornaments, faint
+    watermark, title block. Locals: title, params (array of short strings), size ('a4' | 'a5'), back (link), clinic,
+    generated, by; optional bodyClass (extra class on <body>, such as print-report). Close with print/bottom. %>
+<!doctype html>
+<html lang="fa" dir="rtl" data-theme="light">
+<head>
+  <%- include('../partials/head', { title }) %>
+  <link rel="stylesheet" href="/css/print.css?v=<%= assetVersion %>">
+</head>
+<body class="print-page print-<%= size || 'a4' %><%= locals.bodyClass ? ' ' + locals.bodyClass : '' %>">
+  <div class="print-bar">
+    <a class="btn btn-sm btn-ghost" href="<%= back || '/print' %>">بازگشت</a>
+    <button class="btn btn-sm btn-primary" type="button" data-print hidden><svg class="icon"><use href="#i-print"/></svg>چاپ یا ذخیره به PDF</button>
+    <span class="print-hint">برای ذخیره‌ی PDF، از چاپ مرورگر (Ctrl+P) گزینه‌ی «Save as PDF» را انتخاب کنید.</span>
+  </div>
+  <%- include('../partials/sprite') %>
+  <article class="doc">
+    <span class="doc-corner doc-corner-1" aria-hidden="true"></span><span class="doc-corner doc-corner-2" aria-hidden="true"></span>
+    <span class="doc-corner doc-corner-3" aria-hidden="true"></span><span class="doc-corner doc-corner-4" aria-hidden="true"></span>
+    <div class="doc-watermark" aria-hidden="true"><%= clinic.clinic_name %></div>
+    <header class="doc-letterhead">
+      <div class="doc-mark" aria-hidden="true"><svg class="icon"><use href="#i-cross"/></svg></div>
+      <div>
+        <div class="doc-clinic"><%= clinic.clinic_name %></div>
+        <div class="doc-contact"><%= clinic.clinic_address %><% if (clinic.clinic_address && clinic.clinic_phone) { %> · <% } %><% if (clinic.clinic_phone) { %><span class="mono"><%= clinic.clinic_phone %></span><% } %></div>
+      </div>
+    </header>
+    <div class="doc-title">
+      <h1><%= title %></h1>
+      <% if (params && params.length) { %><div class="doc-params"><% params.forEach((p) => { %><span><%= p %></span><% }) %></div><% } %>
+    </div>

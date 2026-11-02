@@ -1,0 +1,189 @@
+<%
+const fa = (n) => faDigits(Number(n).toLocaleString('en-US').replace(/,/g, '٬'));
+const inLayout = new Map(layout.widgets.map((w, i) => [w.id, { ...w, index: i }]));
+const inQuick = new Map(layout.quick.map((id, i) => [id, i]));
+const sizeText = (s) => faDigits(s.replace('x', '×'));
+const notes = [];
+if (flash.saved === '1') notes.push('چیدمان ذخیره شد.');
+if (flash.undone === '1') notes.push('چیدمان قبلی برگشت.');
+if (flash.undone === '0') notes.push('چیدمان قبلی وجود ندارد.');
+if (flash.reset === '1') notes.push('چیدمان به پیش‌فرض برگشت.');
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('partials/head', { title: 'داشبورد', pageCss: 'page-dashboard' }) %>
+</head>
+<body>
+<%- include('partials/shell-top') %>
+
+      <div class="page-head">
+        <div>
+          <div class="breadcrumb"><span lang="en" dir="ltr">DashBoard</span></div>
+          <h1>داشبورد</h1>
+          <p>خلاصه‌ی وضعیت پرونده‌ها و کارهایی که نیاز به پیگیری دارند.</p>
+          <% if (has('layout')) { %>
+          <div class="page-actions dash-actions">
+            <% if (editing) { %>
+            <a class="btn btn-ink" href="/" aria-current="true"><svg class="icon"><use href="#i-check"/></svg>پایان چیدمان</a>
+            <% } else { %>
+            <a class="btn" href="/?edit=1"><svg class="icon"><use href="#i-layout"/></svg>چیدمان</a>
+            <% } %>
+          </div>
+          <% } %>
+        </div>
+        <%- include('partials/clock-card', { clock }) %>
+      </div>
+
+      <% notes.forEach((n) => { %><div class="info-box" role="status"><%= n %></div><% }); %>
+      <% if (editing && error) { %><div class="info-box" role="alert"><%= error %></div><% } %>
+
+      <% if (editing) { %>
+      <div data-layout-fallback>
+        <form class="card" method="post" action="/dashboard/layout">
+          <input type="hidden" name="fallback" value="1">
+          <div class="card-body form-section">
+            <h2>چیدمان داشبورد</h2>
+            <p class="muted">کادرها و دکمه‌های دسترسی سریع را نشان دهید یا پنهان کنید، اندازه و ترتیب آن‌ها را تعیین کنید.</p>
+            <% catalogue.widgets.forEach((def) => { const cur = inLayout.get(def.id); %>
+            <div class="form-grid">
+              <div class="field">
+                <label class="check"><input type="checkbox" name="show_<%= def.id %>" value="1"<%- cur ? ' checked' : '' %>><span><%= def.label %></span></label>
+              </div>
+              <div class="field">
+                <label for="size_<%= def.id %>">اندازه</label>
+                <select class="select" id="size_<%= def.id %>" name="size_<%= def.id %>">
+                  <% def.sizes.forEach((s) => { %><option value="<%= s %>"<%- (cur ? cur.size : def.sizes[0]) === s ? ' selected' : '' %>><%= sizeText(s) %></option><% }); %>
+                </select>
+              </div>
+              <div class="field">
+                <label for="order_<%= def.id %>">ترتیب</label>
+                <input class="input" type="number" min="1" inputmode="numeric" id="order_<%= def.id %>" name="order_<%= def.id %>" value="<%= cur ? cur.index + 1 : '' %>">
+              </div>
+            </div>
+            <% }); %>
+            <h2>دسترسی سریع</h2>
+            <% catalogue.quick.forEach((b) => { const at = inQuick.get(b.id); %>
+            <div class="form-grid">
+              <div class="field">
+                <label class="check"><input type="checkbox" name="qshow_<%= b.id %>" value="1"<%- at !== undefined ? ' checked' : '' %>><span><%= b.title %></span></label>
+              </div>
+              <div class="field">
+                <label for="qorder_<%= b.id %>">ترتیب</label>
+                <input class="input" type="number" min="1" inputmode="numeric" id="qorder_<%= b.id %>" name="qorder_<%= b.id %>" value="<%= at !== undefined ? at + 1 : '' %>">
+              </div>
+            </div>
+            <% }); %>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>ذخیره</button>
+            </div>
+          </div>
+        </form>
+        <div class="card mt-6">
+          <div class="card-body form-section form-actions">
+            <form method="post" action="/dashboard/layout/undo">
+              <button class="btn" type="submit"<%- hasPrevious ? '' : ' disabled' %>>چیدمان قبلی</button>
+            </form>
+            <form method="post" action="/dashboard/layout/reset">
+              <button class="btn" type="submit">بازگشت به پیش‌فرض</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <% } %>
+
+      <% if (editing) {
+        // Drag edit mode (D54, variant A), only for the layout flag. app.js (enhanceDashLayout) shows the heads, the add
+        // tile and the draft bar, and hides [data-layout-fallback]. DOM contract:
+        // [data-dash-editor] root: data-layout (saved JSON), data-widgets ([{id,label,sizes}]), data-quick ([{id,title,icon,href}])
+        //   .dash-grid > .dash-cell[data-item=widget][data-id][data-size] > .pl-w-head[data-w-head] (hidden until enhanced):
+        //       [data-grip], [data-label-text], button[data-act=size] (svg rect[data-col][data-row] class "on", [data-size-text]),
+        //       button[data-act=hide]
+        //     quick tiles: [data-item=quick][data-id] > .pl-qa-tools[data-qa-tools] (hidden until enhanced: [data-grip],
+        //       button[data-act=hide]); .pl-qa-add[data-qa-add] (hidden until enhanced) > button[data-act=quick-more]
+        //       [aria-expanded] + ul[data-quick-list][hidden] of li > button[data-source=quick][data-id]
+        //   .dash-cell[data-w-add] (hidden until enhanced, always last): ul[data-chips] of li > button.pl-chip[data-source=widget]
+        //     [data-id]; [data-chips-none]
+        //   form[data-layout-save] > input[name=layout][data-layout-json]; .pl-draft[data-draft] and .pl-foot[data-draft-foot]
+        //     (hidden until enhanced) with [data-draft-state], a[data-cancel], button[data-save]
+        //   template[data-tpl=chip] (li > button.pl-chip), template[data-tpl=quick-src] (li > button[data-source=quick]),
+        //   template[data-tpl=w-head] (a head to copy for a widget added back: set its label, aria-labels and size);
+        //   [data-live] polite live region
+        const sizeIcon = (size) => {
+          const [c, r] = size.split('x').map(Number);
+          let h = '<svg class="pl-size-ic" viewBox="0 0 23 17" aria-hidden="true">';
+          for (let row = 0; row < 3; row++) for (let col = 0; col < 4; col++) {
+            h += '<rect data-col="' + col + '" data-row="' + row + '" x="' + (18 - col * 6) + '" y="' + (row * 6) + '" width="5" height="5" rx="1"' + (col < c && row < r ? ' class="on"' : '') + '/>';
+          }
+          return h + '</svg>';
+        };
+        const gripSvg = '<svg class="pl-grip-ic" viewBox="0 0 12 18" aria-hidden="true"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></svg>';
+        const wLabel = (id) => catalogue.widgets.find((x) => x.id === id).label;
+        const wHead = (id, size) => '<div class="pl-w-head" data-w-head hidden>'
+          + '<button type="button" class="pl-grip" data-grip aria-label="جابه‌جایی «' + wLabel(id) + '»" aria-describedby="pl-help">' + gripSvg + '</button>'
+          + '<b data-label-text>' + wLabel(id) + '</b><span class="pl-w-tools">'
+          + '<button type="button" class="pl-size" data-act="size" aria-label="اندازه‌ی «' + wLabel(id) + '»، برای اندازه‌ی بعدی بزنید">' + sizeIcon(size) + '<span data-size-text>' + sizeText(size) + '</span></button>'
+          + '<button type="button" class="pl-x" data-act="hide" aria-label="برداشتن «' + wLabel(id) + '»"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button>'
+          + '</span></div>';
+      %>
+      <div class="dash-editor" data-dash-editor data-layout="<%= JSON.stringify(layout) %>" data-widgets="<%= JSON.stringify(catalogue.widgets) %>" data-quick="<%= JSON.stringify(catalogue.quick) %>">
+        <p class="sr-only" id="pl-help">برای جابه‌جایی با صفحه‌کلید: فاصله یا Enter را بزنید، با کلیدهای جهت جابه‌جا کنید، Enter برای گذاشتن و Esc برای لغو.</p>
+        <div class="sr-only" aria-live="polite" data-live></div>
+        <form id="dash-save" method="post" action="/dashboard/layout" data-layout-save><input type="hidden" name="layout" value="" data-layout-json></form>
+        <div class="dash-grid is-editing">
+          <% widgets.forEach((w) => { %>
+          <div class="dash-cell" data-item="widget" data-id="<%= w.id %>" data-widget="<%= w.id %>" data-size="<%= w.size %>">
+            <%- wHead(w.id, w.size) %>
+            <% if (w.locked) { %>
+            <div class="pl-locked">برای دیدن این بخش دسترسی ندارید</div>
+            <% } else if (w.data === null) { %>
+            <section class="card"><p class="muted card-body">این بخش امروز چیزی برای نشان دادن ندارد.</p></section>
+            <% } else { %>
+            <%- include('dashboard/' + w.id, { w, fa, editing, quickRemoved }) %>
+            <% } %>
+          </div>
+          <% }); %>
+          <div class="dash-cell" data-w-add data-size="1x1" hidden>
+            <div class="pl-w-add">
+              <span class="pl-w-add-title"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>افزودن کارت</span>
+              <ul class="pl-chips" data-chips>
+                <% removed.forEach((r) => { %><li><button type="button" class="pl-chip" data-source="widget" data-id="<%= r.id %>"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span data-label-text><%= r.label %></span></button></li><% }); %>
+              </ul>
+              <p class="pl-w-none" data-chips-none<%- removed.length ? ' hidden' : '' %>>همه‌ی کارت‌ها روی داشبورد هستند.</p>
+            </div>
+          </div>
+        </div>
+        <div class="pl-draft" data-draft hidden>
+          <span class="pl-draft-state" data-draft-state>بدون تغییر</span>
+          <span class="pl-draft-btns">
+            <form method="post" action="/dashboard/layout/reset"><button class="btn btn-ghost pl-wide" type="submit">بازگشت به پیش‌فرض</button></form>
+            <form method="post" action="/dashboard/layout/undo"><button class="btn btn-ghost pl-wide" type="submit"<%- hasPrevious ? '' : ' disabled' %>>چیدمان قبلی</button></form>
+            <a class="btn" href="/?edit=1" data-cancel>انصراف</a>
+            <button class="btn btn-primary" type="submit" form="dash-save" data-save><svg class="icon" aria-hidden="true"><use href="#i-check"/></svg>ذخیره</button>
+          </span>
+        </div>
+        <div class="pl-foot" data-draft-foot hidden>
+          <form method="post" action="/dashboard/layout/reset"><button class="btn" type="submit">بازگشت به پیش‌فرض</button></form>
+          <form method="post" action="/dashboard/layout/undo"><button class="btn" type="submit"<%- hasPrevious ? '' : ' disabled' %>>چیدمان قبلی</button></form>
+        </div>
+        <template data-tpl="chip"><li><button type="button" class="pl-chip" data-source="widget"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg><span data-label-text></span></button></li></template>
+        <template data-tpl="quick-src"><li><button type="button" data-source="quick"><svg class="icon" aria-hidden="true"><use href=""/></svg><span data-label-text></span></button></li></template>
+        <template data-tpl="w-head"><%- wHead('quick', '4x2') %></template>
+      </div>
+      <% } else { %>
+      <div class="dash-grid">
+        <% widgets.forEach((w) => { %>
+        <div class="dash-cell" data-widget="<%= w.id %>" data-size="<%= w.size %>">
+          <% if (w.data === null) { %>
+          <section class="card"><p class="muted card-body">این بخش امروز چیزی برای نشان دادن ندارد.</p></section>
+          <% } else { %>
+          <%- include('dashboard/' + w.id, { w, fa, editing, quickRemoved }) %>
+          <% } %>
+        </div>
+        <% }); %>
+      </div>
+      <% } %>
+
+<%- include('partials/shell-bottom') %>
+</body>
+</html>

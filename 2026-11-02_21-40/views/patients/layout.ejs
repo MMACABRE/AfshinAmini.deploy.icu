@@ -1,0 +1,179 @@
+<%
+// The patient form layout editor (D52, D53). The drag editor (layout-editor.ejs) is rendered hidden and shown by app.js,
+// which then hides [data-layout-fallback]; without JavaScript the plain form below is the editor.
+const NAMES = ['first_name', 'last_name'];
+const inLayout = new Map();
+layout.cards.forEach((card) => card.boxes.forEach((b, i) => inLayout.set(b.id, { card: card.id, order: i + 1, req: !!b.req })));
+const builtinLabel = (id) => catalogue.cards.find((c) => c.id === id).label;
+const cardList = [
+  ...layout.cards.map((c) => ({ id: c.id, label: c.label !== undefined ? c.label : builtinLabel(c.id) })),
+  ...catalogue.cards.filter((c) => !layout.cards.some((x) => x.id === c.id)).map((c) => ({ id: c.id, label: c.label })),
+];
+const boxList = [
+  ...catalogue.boxes.map((b) => ({ id: b.id, label: b.label, home: b.card })),
+  ...customBoxes.map((b) => ({ id: 'c:' + b.id, label: b.label, home: cardList[0].id, custom: b })),
+];
+const cardOf = (box) => (inLayout.get(box.id) ? inLayout.get(box.id).card : box.home);
+const phoneShown = inLayout.has('phone');
+const notes = [];
+if (flash.saved === '1') notes.push('چیدمان ذخیره شد.');
+if (flash.undone === '1') notes.push('چیدمان قبلی برگشت.');
+if (flash.undone === '0') notes.push('چیدمان قبلی وجود ندارد.');
+if (flash.reset === '1') notes.push('چیدمان به پیش‌فرض برگشت. کادرهای سفارشی همچنان هستند و پنهان شده‌اند.');
+if (flash.created) notes.push('کادر تازه ساخته شد. تا وقتی در فرم نگذارید، پنهان است.');
+if (flash.deleted === '1') notes.push('کادر حذف شد.');
+const typeLabel = (type) => catalogue.types.find((t) => t.id === type).label;
+const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+const cardSelect = (box) => cardList.map((c) => `<option value="${esc(c.id)}"${cardOf(box) === c.id ? ' selected' : ''}>${esc(c.label)}</option>`).join('');
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'چیدمان فرم بیمار', pageCss: 'page-layouts' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/patients" lang="en">Patients</a> / <span>چیدمان فرم</span></div>
+      <h1>چیدمان فرم بیمار</h1>
+      <p class="muted">کادرهایی را که این کلینیک لازم دارد نشان دهید، ترتیب و کارت هر کادر را تعیین کنید و کادر الزامی مشخص کنید.</p>
+
+      <% notes.forEach((n) => { %><div class="info-box" role="status"><%= n %></div><% }); %>
+      <% if (error) { %><div class="info-box" role="alert"><%= error %></div><% } %>
+
+      <%- include('layout-editor') %>
+
+      <div data-layout-fallback>
+        <form class="card" method="post" action="/patients/layout">
+          <input type="hidden" name="fallback" value="1">
+          <div class="card-body form-section">
+            <% if (!phoneShown) { %><div class="info-box" role="alert">بدون کادر تلفن، یادآوری پیامکی برای بیماران تازه فرستاده نمی‌شود.</div><% } %>
+
+            <h2>ترتیب کارت‌ها</h2>
+            <% cardList.forEach((c, i) => { %>
+            <fieldset class="field">
+              <legend><%= c.label %><% if (!layout.cards.some((x) => x.id === c.id)) { %> <span class="muted">(در فرم نیست)</span><% } %></legend>
+              <label for="card_order_<%= c.id %>">ترتیب</label>
+              <input class="input" type="number" min="1" inputmode="numeric" id="card_order_<%= c.id %>" name="card_order_<%= c.id %>" value="<%= i + 1 %>">
+            </fieldset>
+            <% }); %>
+
+            <h2>کادرها</h2>
+            <% boxList.forEach((box) => { const entry = inLayout.get(box.id); const name = NAMES.includes(box.id); %>
+            <div class="form-grid" id="row-<%= box.id %>">
+              <div class="field">
+                <% if (name) { %>
+                <label class="check"><input type="checkbox" checked disabled><span><%= box.label %> (همیشه)</span></label>
+                <input type="hidden" name="show_<%= box.id %>" value="1">
+                <% } else { %>
+                <label class="check"><input type="checkbox" name="show_<%= box.id %>" value="1"<%- entry ? ' checked' : '' %>><span><%= box.label %></span></label>
+                <% } %>
+              </div>
+              <div class="field">
+                <label for="card_of_<%= box.id %>">کارت</label>
+                <select class="select" id="card_of_<%= box.id %>" name="card_of_<%= box.id %>"><%- cardSelect(box) %></select>
+              </div>
+              <div class="field">
+                <label for="order_<%= box.id %>">ترتیب در کارت</label>
+                <input class="input" type="number" min="1" inputmode="numeric" id="order_<%= box.id %>" name="order_<%= box.id %>" value="<%= entry ? entry.order : '' %>">
+              </div>
+              <div class="field">
+                <% if (name) { %>
+                <label class="check"><input type="checkbox" checked disabled><span>الزامی</span></label>
+                <input type="hidden" name="req_<%= box.id %>" value="1">
+                <% } else { %>
+                <label class="check"><input type="checkbox" name="req_<%= box.id %>" value="1"<%- entry && entry.req ? ' checked' : '' %>><span>الزامی</span></label>
+                <% } %>
+              </div>
+            </div>
+            <% }); %>
+
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>ذخیره</button>
+            </div>
+          </div>
+        </form>
+
+        <div class="card mt-6">
+          <div class="card-body form-section form-actions">
+            <form method="post" action="/patients/layout/undo">
+              <button class="btn" type="submit"<%- hasPrevious ? '' : ' disabled' %>>چیدمان قبلی</button>
+            </form>
+            <form method="post" action="/patients/layout/reset">
+              <button class="btn" type="submit">بازگشت به پیش‌فرض</button>
+            </form>
+          </div>
+        </div>
+
+        <section class="card mt-6">
+          <form class="card-body form-section" method="post" action="/patients/layout/boxes">
+            <h2>کادر تازه</h2>
+            <% if (boxError) { %><div class="info-box" role="alert"><%= boxError %></div><% } %>
+            <div class="form-grid">
+              <div class="field">
+                <label for="new-type">نوع کادر</label>
+                <select class="select" id="new-type" name="type">
+                  <% catalogue.types.forEach((t) => { %><option value="<%= t.id %>"<%- boxValues.type === t.id ? ' selected' : '' %>><%= t.label %></option><% }); %>
+                </select>
+              </div>
+              <div class="field">
+                <label for="new-label">نام کادر</label>
+                <input class="input" type="text" id="new-label" name="label" maxlength="60" value="<%= boxValues.label || '' %>" autocomplete="off">
+                <span class="hint">نام بعداً عوض نمی‌شود.</span>
+              </div>
+              <div class="field span-2">
+                <label for="new-choices">گزینه‌ها، با ویرگول جدا</label>
+                <textarea class="textarea" id="new-choices" name="choices" rows="2"><%= boxValues.choices || '' %></textarea>
+                <span class="hint">فقط برای «انتخاب از فهرست»</span>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn btn-primary" type="submit">ساختن کادر</button>
+            </div>
+          </form>
+        </section>
+
+        <section class="card mt-6">
+          <div class="card-body form-section">
+            <h2>کادرهای سفارشی</h2>
+            <% if (!customBoxes.length) { %><p class="muted">هنوز کادر سفارشی ساخته نشده است.</p><% } %>
+            <% customBoxes.forEach((box) => { const shown = inLayout.has('c:' + box.id); const held = usedBoxes.has(box.id); %>
+            <article id="box-<%= box.id %>" class="form-section">
+              <h3><%= box.label %> <span class="muted">(<%= typeLabel(box.type) %>، <%= shown ? 'در فرم' : 'پنهان' %>)</span></h3>
+              <% if (held) { %><p class="muted">مقدار دارد؛ حذف نمی‌شود</p><% } else { %>
+              <p><a href="/patients/layout/boxes/<%= box.id %>/delete">حذف کادر</a></p>
+              <% } %>
+              <% if (choiceError && choiceError.id === box.id) { %><div class="info-box" role="alert"><%= choiceError.text %></div><% } %>
+              <% if (box.type === 'choice') { %>
+              <ul class="list">
+                <% box.choices.forEach((c) => { const used = usedChoices[box.id] && usedChoices[box.id].has(String(c.id)); %>
+                <li>
+                  <span><%= c.label %><%= c.hidden ? ' (پنهان)' : '' %></span>
+                  <form class="inline-form" method="post" action="/patients/layout/boxes/<%= box.id %>/choices">
+                    <input type="hidden" name="choice" value="<%= c.id %>">
+                    <button class="btn btn-sm" type="submit" name="action" value="<%= c.hidden ? 'show' : 'hide' %>"><%= c.hidden ? 'نمایش' : 'پنهان کردن' %></button>
+                  </form>
+                  <% if (!used) { %>
+                  <form class="inline-form" method="post" action="/patients/layout/boxes/<%= box.id %>/choices">
+                    <input type="hidden" name="choice" value="<%= c.id %>">
+                    <button class="btn btn-sm" type="submit" name="action" value="remove">حذف گزینه</button>
+                  </form>
+                  <% } %>
+                </li>
+                <% }); %>
+              </ul>
+              <form class="inline-form" method="post" action="/patients/layout/boxes/<%= box.id %>/choices">
+                <label for="add-<%= box.id %>">گزینه‌ی تازه</label>
+                <input class="input" type="text" id="add-<%= box.id %>" name="text" maxlength="60" autocomplete="off">
+                <button class="btn btn-sm" type="submit" name="action" value="add">افزودن</button>
+              </form>
+              <% } %>
+            </article>
+            <% }); %>
+          </div>
+        </section>
+      </div>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

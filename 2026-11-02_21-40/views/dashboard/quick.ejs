@@ -1,0 +1,40 @@
+<%# Quick buttons. Locals: w (data.tiles), fa, editing, quickRemoved. In edit mode every tile of the layout shows
+    (locked ones, which the user may not open, without a link); each tile gets a grip and ×, and a «+ دکمه» cell lists
+    the buttons not on the dashboard. The first tile the user may open is the large sage one. %>
+<% const tiles = w.data.tiles;
+   const firstOpen = tiles.findIndex((t) => !t.locked);
+   const gripSvg = '<svg class="pl-grip-ic" viewBox="0 0 12 18" aria-hidden="true"><circle cx="3" cy="3" r="1.6"/><circle cx="9" cy="3" r="1.6"/><circle cx="3" cy="9" r="1.6"/><circle cx="9" cy="9" r="1.6"/><circle cx="3" cy="15" r="1.6"/><circle cx="9" cy="15" r="1.6"/></svg>';
+   const tools = (t) => (editing
+     ? '<span class="pl-qa-tools" data-qa-tools hidden><button type="button" class="pl-grip" data-grip aria-label="جابه‌جایی دکمه‌ی «' + t.title + '»" aria-describedby="pl-help">' + gripSvg + '</button>'
+       + '<button type="button" class="pl-x" data-act="hide" aria-label="برداشتن دکمه‌ی «' + t.title + '»"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button></span>'
+     : ''); %>
+<section class="quick" aria-labelledby="qa-h">
+  <h2 id="qa-h">دسترسی سریع</h2>
+  <div class="qa-grid<%= tiles.length > 5 ? ' qa-admin' : '' %>">
+    <% tiles.forEach((t, i) => {
+         const primary = editing ? i === firstOpen : t.primary;
+         const item = editing ? ' data-item="quick" data-id="' + t.id + '"' : ''; %>
+    <% if (t.locked) { %>
+    <span class="qa-tile" aria-disabled="true"<%- item %>>
+      <%- tools(t) %>
+      <span class="qa-icon"><svg class="icon"><use href="#i-<%= t.icon %>"/></svg></span>
+      <span class="qa-text"><b><%= t.title %></b><span>برای دیدن این بخش دسترسی ندارید</span></span>
+    </span>
+    <% } else { %>
+    <a class="qa-tile<%= primary ? ' qa-primary' : '' %>" href="<%= t.href %>"<%- item %>>
+      <%- tools(t) %>
+      <span class="qa-icon"><svg class="icon"><use href="#i-<%= t.icon %>"/></svg></span>
+      <span class="qa-text"><b><%= t.title %></b><span><%= t.text %></span></span>
+    </a>
+    <% } %>
+    <% }) %>
+    <% if (editing) { %>
+    <div class="pl-qa-add" data-qa-add hidden>
+      <button type="button" class="pl-qa-more" data-act="quick-more" aria-expanded="false"><svg class="icon" aria-hidden="true"><use href="#i-plus"/></svg>دکمه</button>
+      <ul class="card pl-qa-pop" data-quick-list hidden>
+        <% (quickRemoved || []).forEach((b) => { %><li><button type="button" data-source="quick" data-id="<%= b.id %>"><svg class="icon" aria-hidden="true"><use href="#i-<%= b.icon %>"/></svg><span data-label-text><%= b.title %></span></button></li><% }) %>
+      </ul>
+    </div>
+    <% } %>
+  </div>
+</section>

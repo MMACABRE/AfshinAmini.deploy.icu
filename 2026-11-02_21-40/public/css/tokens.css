@@ -1,0 +1,189 @@
+/* Design tokens: "the quiet of a well-lit clinic".
+   Light = warm paper, elevation by tonal shift. Dark = deep green night room, lamp-lit.
+   Sage is reserved for one primary action and one active state; everything else is warm neutral. */
+@font-face { font-family: "Vazirmatn"; src: url("../fonts/Vazirmatn-Variable.woff2") format("woff2"); font-weight: 100 900; font-display: swap; }
+@font-face { font-family: "Geist Mono"; src: url("../fonts/geist-mono-latin-400-normal.woff2") format("woff2"); font-weight: 400; font-display: swap; }
+@font-face { font-family: "Geist Mono"; src: url("../fonts/geist-mono-latin-500-normal.woff2") format("woff2"); font-weight: 500; font-display: swap; }
+
+:root {
+  /* type */
+  --font-head: "Vazirmatn", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Vazirmatn", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Geist Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --fs-xs: 12px; --fs-sm: 13.5px; --fs-md: 15px; --fs-lg: 17px;
+  --fs-xl: 21px; --fs-2xl: 28px; --fs-3xl: 48px; --fs-display: 46px;
+  --fs-eyebrow: 11px;
+  --track-display: -.042em; /* large headings */
+  --track-head: -.02em;     /* headings */
+  --track-label: .1em;      /* small-caps labels */
+
+  /* spacing (8px grid) */
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px; --sp-5: 24px;
+  --sp-6: 32px; --sp-7: 40px; --sp-8: 56px; --sp-9: 72px;
+  --pad: 28px;               /* card / panel inline padding */
+  --section: 40px;           /* vertical rhythm between page sections */
+  --row-h: 60px;
+  --ctl-h: 40px;             /* buttons */
+  --field-h: 44px;           /* inputs, selects */
+  --radius-sm: 8px; --radius: 12px; --radius-lg: 16px; --radius-full: 999px;
+
+  /* surfaces: paper < sidebar < card; faint hairlines, tone does the work */
+  --bg: #f6f1e7;
+  --bg-wash: 30%; /* how much --bg covers the main-page background image */
+  --bg-image: url("/img/radial-turning-plus-light.webp"); /* the same pattern drawn in sage on cream, so it stays green */
+  --surface: #fcfaf5;
+  --surface-2: #eee8db;
+  --sidebar-bg: #f1ebde;
+  --raised: #fffaf5;
+  --border: #e8e1d2;
+  --border-subtle: #eee8da;
+  --border-strong: #d6cdb9;
+  --hover: rgba(70, 55, 25, .05);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, .7);   /* soft top light on raised things */
+  --wash: #f3e8cb;           /* sunlight wash behind a hero */
+  --glow-a: #fbf0d2;         /* daylight glow */
+  --glow-b: #e1e9d6;         /* shade glow */
+
+  /* text */
+  --text: #2a2320;           /* near-black with a drop of terracotta: espresso, not ink */
+  --text-2: #57564b;
+  --text-3: #686555;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%23686555' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); /* arrow of every drop-down */
+  --text-on-accent: #fff3ec;  /* white blushed with terracotta */
+  --ink: #26261f;            /* neutral "selected" fill */
+  --on-ink: #f6f1e7;
+
+  /* sage accent: primary action + active state only */
+  --accent: #376746;
+  --accent-hover: #265335;
+  --accent-tint: #d4e8cf;
+  --accent-line: #a5c4a5;
+  --accent-text: #254f35;
+  --focus: rgba(55, 103, 70, .22);
+
+  /* terracotta: a second voice, about a tenth of the colour, that joins the sage and never replaces it
+     (tips on green lines, a sun behind green surfaces, small labels; see "Terracotta touches" in
+     components.css). It also warms the whites (--raised, --text-on-accent) and the near-black --text. */
+  --terra: #c8664a;
+  --terra-hover: #b0553b;
+  --terra-tint: #f5ddd2;
+  --terra-line: #e2b09d;
+  --terra-text: #9e4a31;
+  --terra-pale: #fbeee8;     /* shades for gradients and suns: pale wash, light glow, deep shadow */
+  --terra-light: #e0947a;
+  --terra-deep: #8f3f29;
+
+  /* status: tiny dot + quiet tint */
+  --ok-bg: #d2e9cd;    --ok-fg: #1f5432;    --ok-dot: #398a54;
+  --warn-bg: #f5e8c6;  --warn-fg: #6c4a0b;  --warn-dot: #c58f1e;
+  --crit-bg: #f3dbd3;  --crit-fg: #82302a;  --crit-dot: #bf4a40;
+  --mute-bg: #e9e3d6;  --mute-fg: #4d4f46;  --mute-dot: #8a897a;
+  --info-bg: #dde8ea;  --info-fg: #285068;  --info-dot: #447f9e;
+
+  /* avatars */
+  --warm-bg: #ebe0cb;  --warm-fg: #6b4d26;
+
+  /* elevation: 0 none, xs controls, sm raised, md overlays */
+  --shadow-xs: 0 1px 1px rgba(70, 55, 25, .05);
+  --shadow-sm: 0 1px 2px rgba(70, 55, 25, .08), 0 1px 1px rgba(70, 55, 25, .04);
+  --shadow: 0 8px 24px -8px rgba(70, 55, 25, .16), 0 1px 3px rgba(70, 55, 25, .06);
+  --sidebar-w: 256px;
+  --topbar-h: 68px;
+  --ease: cubic-bezier(.3, 0, .2, 1);
+  --t: 180ms;
+  --t-fast: 120ms;
+}
+
+/* Dark tokens: follow the system unless the user picked light; or forced by the theme button (data-theme). */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    /* a deep green night room: raised things glow faintly lighter */
+    --bg: #0c1310;
+    --bg-wash: 40%;
+    --bg-image: url("/img/radial-turning-plus.png");
+    --surface: #131c17;
+    --surface-2: #1a2620;
+    --sidebar-bg: #0a100d;
+    --raised: #223029;
+    --border: #1f2b25;
+    --border-subtle: #19231e;
+    --border-strong: #2f3f36;
+    --hover: rgba(236, 240, 226, .055);
+    --edge: inset 0 1px 0 rgba(255, 255, 255, .045);
+    --wash: #1a2b22;
+    --glow-a: #1d3027;
+    --glow-b: #0e1914;
+    --text: #eee6dc;
+    --text-2: #a8b0a2;
+    --text-3: #8c9789;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%238c9789' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); /* arrow of every drop-down */
+    --text-on-accent: #06150c;
+    --ink: #e6e8de;
+    --on-ink: #0c1310;
+    --accent: #67b982;
+    --accent-hover: #7ecc96;
+    --accent-tint: #1b3e29;
+    --accent-line: #386649;
+    --accent-text: #9ad9ac;
+    --focus: rgba(103, 185, 130, .3);
+    --terra: #d97a5c; --terra-hover: #e68d70; --terra-tint: #3a241b; --terra-line: #6e3f2e; --terra-text: #eda58c;
+    --terra-pale: #2a1d17; --terra-light: #f0a88f; --terra-deep: #a8533a;
+    --ok-bg: #193e27;   --ok-fg: #9de0b0;   --ok-dot: #5ebc7b;
+    --warn-bg: #352b17; --warn-fg: #ecc57a; --warn-dot: #dca43a;
+    --crit-bg: #392320; --crit-fg: #f0a8a3; --crit-dot: #dd6c65;
+    --mute-bg: #232c27; --mute-fg: #b3bbb5; --mute-dot: #8b948d;
+    --info-bg: #1b2d38; --info-fg: #9fcbe6; --info-dot: #5fa3cc;
+    --warm-bg: #35291d; --warm-fg: #e3c597;
+    --shadow-xs: none;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+    --shadow: 0 10px 28px -8px rgba(0, 0, 0, .6), 0 1px 3px rgba(0, 0, 0, .3);
+  }
+}
+:root[data-theme="dark"] {
+  /* a deep green night room: raised things glow faintly lighter */
+  --bg: #0c1310;
+  --bg-wash: 40%;
+  --bg-image: url("/img/radial-turning-plus.png");
+  --surface: #131c17;
+  --surface-2: #1a2620;
+  --sidebar-bg: #0a100d;
+  --raised: #223029;
+  --border: #1f2b25;
+  --border-subtle: #19231e;
+  --border-strong: #2f3f36;
+  --hover: rgba(236, 240, 226, .055);
+  --edge: inset 0 1px 0 rgba(255, 255, 255, .045);
+  --wash: #1a2b22;
+  --glow-a: #1d3027;
+  --glow-b: #0e1914;
+  --text: #eee6dc;
+  --text-2: #a8b0a2;
+  --text-3: #8c9789;
+  --chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8' fill='none' stroke='%238c9789' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M1 1.5l5 5 5-5'/%3E%3C/svg%3E"); /* arrow of every drop-down */
+  --text-on-accent: #06150c;
+  --ink: #e6e8de;
+  --on-ink: #0c1310;
+  --accent: #67b982;
+  --accent-hover: #7ecc96;
+  --accent-tint: #1b3e29;
+  --accent-line: #386649;
+  --accent-text: #9ad9ac;
+  --focus: rgba(103, 185, 130, .3);
+  --terra: #d97a5c; --terra-hover: #e68d70; --terra-tint: #3a241b; --terra-line: #6e3f2e; --terra-text: #eda58c;
+    --terra-pale: #2a1d17; --terra-light: #f0a88f; --terra-deep: #a8533a;
+  --ok-bg: #193e27;   --ok-fg: #9de0b0;   --ok-dot: #5ebc7b;
+  --warn-bg: #352b17; --warn-fg: #ecc57a; --warn-dot: #dca43a;
+  --crit-bg: #392320; --crit-fg: #f0a8a3; --crit-dot: #dd6c65;
+  --mute-bg: #232c27; --mute-fg: #b3bbb5; --mute-dot: #8b948d;
+  --info-bg: #1b2d38; --info-fg: #9fcbe6; --info-dot: #5fa3cc;
+  --warm-bg: #35291d; --warm-fg: #e3c597;
+  --shadow-xs: none;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35);
+  --shadow: 0 10px 28px -8px rgba(0, 0, 0, .6), 0 1px 3px rgba(0, 0, 0, .3);
+}
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"] { color-scheme: dark; }
+
+@media (max-width: 600px) {
+  :root { --pad: 20px; --ctl-h: 44px; --section: 32px; --fs-display: 34px; --fs-3xl: 40px; --fs-eyebrow: 12px; }
+}

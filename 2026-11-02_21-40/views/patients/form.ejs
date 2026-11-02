@@ -1,0 +1,108 @@
+<%
+const { CATEGORY } = labels;
+const editing = !!patient;
+const title = editing ? 'ویرایش ' + patient.first_name + ' ' + patient.last_name : 'بیمار جدید';
+const action = editing ? '/patients/' + patient.code : '/patients';
+const v = (k) => (values && values[k] !== null && values[k] !== undefined ? values[k] : '');
+const err = (k) => errors[k];
+const hasErrors = Object.keys(errors).length > 0;
+// Patient form layout (D52). Each box is rendered by partials/form-box in layout order. `rendered` collects the
+// ids, posted back as `boxes`.
+const rendered = [];
+const customBoxes = locals.customBoxes || {};
+const builtin = locals.builtin;
+const showAll = !!locals.showAll;
+const box = (entry, required) => include('../partials/form-box', {
+  box: entry, required, v, err, suggestions, disabled: false, nextCode: locals.nextCode, options: Object.entries(CATEGORY),
+});
+const renderRef = (id, required) => {
+  rendered.push(id);
+  return box(id.startsWith('c:') ? customBoxes[id.slice(2)] : { id }, required);
+};
+const cardTitle = (card) => (card.label !== undefined ? card.label : builtin.cards.find((c) => c.id === card.id).label);
+const shownIds = new Set(locals.layout.cards.flatMap((c) => c.boxes.map((b) => b.id)));
+const hiddenBuiltin = builtin.boxes.filter((b) => !shownIds.has(b.id));
+const hiddenCustom = Object.values(customBoxes).filter((b) => !shownIds.has('c:' + b.id));
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title, pageCss: 'page-patient-profile' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb">
+        <a href="/patients" lang="en">Patients</a> / <span lang="en"><%= editing ? 'Edit Patient' : 'New Patient' %></span>
+      </div>
+
+      <form class="card" method="post" action="<%= action %>"<%- editing ? '' : ' enctype="multipart/form-data"' %> novalidate>
+        <div class="card-body form-section">
+          <h1><%= title %></h1>
+          <% if (hasErrors) { %><div class="info-box" role="alert">لطفاً خطاهای مشخص‌شده را برطرف کنید.</div><% } %>
+          <% if (editing) { %><p class="muted">کد بیمار: <span class="mono"><%= patient.code %></span><%= has('patient_code') ? ' (برای تغییر، فرم پایین صفحه)' : '' %></p><% } %>
+          <% if (!editing && locals.nextCode) { %>
+          <div class="form-grid">
+            <%- box({ id: 'code' }, false) %>
+          </div>
+          <% } %>
+
+          <% locals.layout.cards.filter((card) => card.boxes.length).forEach((card) => { %>
+          <h2><%= cardTitle(card) %></h2>
+          <div class="form-grid">
+            <% card.boxes.forEach((ref) => { %><%- renderRef(ref.id, ref.req === true) %><% }); %>
+          </div>
+          <% }); %>
+          <% if (editing && !showAll && (hiddenBuiltin.length || hiddenCustom.length)) { %>
+          <p><a href="/patients/<%= patient.code %>/edit?all=1#more">نمایش همه‌ی کادرها</a></p>
+          <% } %>
+          <% if (editing && showAll && (hiddenBuiltin.length || hiddenCustom.length)) { %>
+          <h2 id="more">سایر کادرها</h2>
+          <div class="form-grid">
+            <% hiddenBuiltin.forEach((b) => { %><%- renderRef(b.id, false) %><% }); %>
+            <% hiddenCustom.forEach((b) => { %><%- renderRef('c:' + b.id, false) %><% }); %>
+          </div>
+          <% } %>
+          <input type="hidden" name="boxes" value="<%= rendered.join(',') %>">
+          <% if (showAll) { %><input type="hidden" name="show_all" value="1"><% } %>
+
+          <% if (!editing && can('documents', 2)) { %>
+          <h2>مدارک پزشکی <span class="muted">(اختیاری)</span></h2>
+          <div class="form-grid">
+            <div class="field span-2">
+              <%- include('../partials/dropzone', { id: 'f-files', name: 'files', multiple: true, hint: 'تا ' + faDigits(newFilesMax) + ' فایل PDF، JPG، PNG یا DICOM، روی هم تا ۳۰ مگابایت · عکس‌های بزرگ خودکار کوچک می‌شوند' }) %>
+              <% if (err('files')) { %><p class="field-error" id="f-files-err" role="alert"><%= err('files') %></p><% } %>
+            </div>
+            <%- box({ id: 'doc_category' }, false) %>
+          </div>
+          <% } %>
+
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>ذخیره</button>
+            <a class="btn" href="<%= editing ? '/patients/' + patient.code : '/patients' %>">انصراف</a>
+          </div>
+        </div>
+      </form>
+
+      <% if (editing && has('patient_code')) {
+        const cv = locals.codeValues || {};
+        const ce = locals.codeError; %>
+      <form class="card mt-6" id="code" method="post" action="/patients/<%= patient.code %>/code" novalidate aria-labelledby="code-h">
+        <div class="card-body form-section">
+          <h2 id="code-h">تغییر کد بیمار</h2>
+          <p class="muted">کد فعلی <span class="mono"><%= patient.code %></span> است. با تغییر کد، پوشه‌ی پرونده روی سرور هم به نام تازه درمی‌آید و همه‌ی صفحه‌ها و خروجی‌ها کد تازه را نشان می‌دهند. کد قبلی آزاد می‌شود.</p>
+          <% if (ce) { %><div class="info-box" role="alert" id="code-err"><%= ce %></div><% } %>
+          <div class="form-grid">
+            <div class="field"><label for="f-new-code">کد تازه</label><input class="input mono" type="text" id="f-new-code" name="new_code" value="<%= cv.typed || '' %>" dir="ltr" placeholder="P-000123" maxlength="20" autocomplete="off" required<%- ce ? ' aria-invalid="true" aria-describedby="code-err"' : '' %>><span class="hint">مثل P-000123 یا فقط عدد آن</span></div>
+            <div class="field"><label for="f-new-code2">تکرار کد تازه</label><input class="input mono" type="text" id="f-new-code2" name="new_code2" value="<%= cv.again || '' %>" dir="ltr" placeholder="P-000123" maxlength="20" autocomplete="off" required></div>
+          </div>
+          <div class="form-actions">
+            <button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-check"/></svg>تغییر کد</button>
+          </div>
+        </div>
+      </form>
+      <% } %>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

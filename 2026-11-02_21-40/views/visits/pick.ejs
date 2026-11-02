@@ -1,0 +1,41 @@
+<%
+// Day and time picked on the /visits day bar (D50), carried through the search to the form.
+const carry = (when.d ? '&d=' + encodeURIComponent(when.d) : '') + (when.t ? '&t=' + encodeURIComponent(when.t) : '');
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'ویزیت جدید', pageCss: 'page-visits' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="breadcrumb"><a href="/visits" lang="en">Visits</a> / جدید</div>
+      <div class="page-head"><div><h1>ویزیت جدید</h1><p><% if (when.t) { %>ساعت <span class="mono"><%= faDigits(when.t) %></span><% if (when.d) { %> روز <span class="mono"><%= faDigits(when.d) %></span><% } %> · <% } %>نخست بیمار را پیدا کنید.</p></div></div>
+
+      <section class="card">
+        <form class="toolbar" method="get" action="/visits/new">
+          <div class="input-group flex-1-240-420">
+            <svg class="icon"><use href="#i-search"/></svg>
+            <input class="input" type="search" name="q" value="<%= text %>" placeholder="نام، کد یا شماره تلفن" aria-label="جستجوی بیمار" autofocus>
+          </div>
+          <% if (when.d) { %><input type="hidden" name="d" value="<%= when.d %>"><% } %>
+          <% if (when.t) { %><input type="hidden" name="t" value="<%= when.t %>"><% } %>
+          <button class="btn btn-primary" type="submit">جستجو</button>
+        </form>
+        <% if (text && found.length === 0) { %>
+        <div class="card-body"><p class="muted">بیماری با این مشخصات پیدا نشد.</p></div>
+        <% } %>
+        <% if (found.length) { %>
+        <ul class="visit-list pick-list">
+          <% found.forEach((p) => { %>
+          <li class="visit"><div class="visit-body"><b><%= p.first_name %> <%= p.last_name %></b><span class="mono"><%= p.code %></span></div>
+            <a class="btn btn-sm btn-primary" href="/visits/new?patient=<%= p.code %><%= carry %>">انتخاب</a></li>
+          <% }) %>
+        </ul>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

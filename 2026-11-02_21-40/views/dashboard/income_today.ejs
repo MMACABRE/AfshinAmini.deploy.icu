@@ -1,0 +1,6 @@
+<%# Today's income card. Locals: w (data: total, count), fa. %>
+<a class="card income-today" href="/finance">
+  <span class="qa-icon"><svg class="icon"><use href="#i-wallet"/></svg></span>
+  <span><span class="stat-label">درآمد امروز</span><b class="money"><%= formatMoney(w.data.total, cur) %></b></span>
+  <span class="muted"><%= fa(w.data.count) %> پرداخت</span>
+</a>

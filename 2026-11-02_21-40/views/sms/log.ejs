@@ -1,0 +1,75 @@
+<%# SMS log. Locals: rows, total, page, pages, status, kind, KIND_LABEL, STATUS_LABEL, ready { s, info, on, hasKey }. %>
+<%
+const href = (p) => {
+  const q = new URLSearchParams();
+  if (status) q.set('status', status);
+  if (kind) q.set('kind', kind);
+  if (p > 1) q.set('page', p);
+  const s = q.toString();
+  return '/sms' + (s ? '?' + s : '');
+};
+%>
+<!doctype html>
+<html lang="fa" dir="rtl"<%- theme ? ' data-theme="' + theme + '"' : '' %>>
+<head>
+  <%- include('../partials/head', { title: 'گزارش پیامک', pageCss: 'page-sms' }) %>
+</head>
+<body>
+<%- include('../partials/shell-top') %>
+
+      <div class="page-head"><div><div class="breadcrumb">پیامک / گزارش ارسال</div><h1>پیامک</h1></div></div>
+      <%- include('nav', { here: 'log' }) %>
+
+      <% if (!ready.on) { %>
+      <div class="callout callout-info mb-4" role="status"><svg class="icon"><use href="#i-alert"/></svg><span>پیامک غیرفعال است. برای شروع، از بخش «تنظیمات» آن را روشن کنید.</span></div>
+      <% } else if (!ready.hasKey) { %>
+      <div class="callout mb-4" role="status"><svg class="icon"><use href="#i-key"/></svg><span>کلید پیامک ثبت نشده است. پیامکی ارسال نمی‌شود.</span></div>
+      <% } %>
+      <% if (ready.s.sms_balance !== '') { %>
+      <p class="sms-balance muted">اعتبار: <b><%= faDigits(Math.floor(Number(ready.s.sms_balance))) %> پیام</b><% if (ready.s.sms_balance_at) { %> · خوانده‌شده در <%= formatJalaliDateTime(ready.s.sms_balance_at) %><% } %></p>
+      <% } %>
+
+      <section class="card">
+        <form class="card-body filter-bar" method="get" action="/sms">
+          <div class="field"><label for="f-status">وضعیت</label><select id="f-status" class="select" name="status"><option value="">همه</option><% Object.entries(STATUS_LABEL).forEach(([k, l]) => { %><option value="<%= k %>"<%- status === k ? ' selected' : '' %>><%= l[0] %></option><% }) %></select></div>
+          <div class="field"><label for="f-kind">نوع</label><select id="f-kind" class="select" name="kind"><option value="">همه</option><% Object.entries(KIND_LABEL).forEach(([k, l]) => { %><option value="<%= k %>"<%- kind === k ? ' selected' : '' %>><%= l %></option><% }) %></select></div>
+          <div class="field filter-go"><button class="btn btn-primary" type="submit"><svg class="icon"><use href="#i-filter"/></svg>نمایش</button></div>
+        </form>
+        <div class="card-foot"><span><%= faDigits(total) %> پیام</span></div>
+        <% if (!rows.length) { %>
+        <div class="card-body"><p class="muted">هنوز پیامکی ثبت نشده است.</p></div>
+        <% } else { %>
+        <div class="table-wrap">
+          <table class="table">
+            <thead><tr><th scope="col">زمان</th><th scope="col">بیمار</th><th scope="col">نوع</th><th scope="col">متن</th><th scope="col">وضعیت</th></tr></thead>
+            <tbody>
+              <% rows.forEach((m) => { const st = STATUS_LABEL[m.status]; %>
+              <tr>
+                <td data-label="زمان"><%= formatJalaliDateTime(m.sent_at || m.created_at) %></td>
+                <td data-label="بیمار"><% if (m.code) { %><a href="/patients/<%= m.code %>"><%= m.first_name %> <%= m.last_name %></a><br><% } %><span class="mono text-xs-muted"><%= m.phone || '' %></span></td>
+                <td data-label="نوع"><%= KIND_LABEL[m.kind] %></td>
+                <td data-label="متن" class="sms-text"><%= m.body || '—' %></td>
+                <td data-label="وضعیت">
+                  <span class="chip <%= st[1] %>"><%= st[0] %></span>
+                  <% if (m.reason) { %><span class="text-xs-muted sms-reason"><%= m.reason %></span><% } %>
+                  <% if (m.status === 'failed' && can('sms', 2)) { %>
+                  <form method="post" action="/sms/<%= m.id %>/retry"><button class="btn btn-sm" type="submit">ارسال دوباره</button></form>
+                  <% } %>
+                </td>
+              </tr>
+              <% }) %>
+            </tbody>
+          </table>
+        </div>
+        <% if (pages > 1) { %>
+        <div class="card-foot"><span>صفحه‌ی <%= faDigits(page) %> از <%= faDigits(pages) %></span><div class="user-actions">
+          <% if (page > 1) { %><a class="btn btn-sm" href="<%= href(page - 1) %>">قبلی</a><% } %>
+          <% if (page < pages) { %><a class="btn btn-sm" href="<%= href(page + 1) %>">بعدی</a><% } %>
+        </div></div>
+        <% } %>
+        <% } %>
+      </section>
+
+<%- include('../partials/shell-bottom') %>
+</body>
+</html>

@@ -1,0 +1,48 @@
+<%# Day bar on /visits (D50): the booked times of one day on a ruler from 00:00 to 24:00, left to right.
+    Works without JavaScript: each hour is a link that starts a new visit at that hour, and each booked visit is an SVG
+    block whose <title> shows the patient only on hover. app.js adds 5-minute picks, a styled hover card and scrolling.
+    Locals: bar ({ date, input, prev, next, isToday, bookings }). %>
+<%
+const hh = (h) => String(h).padStart(2, '0');
+const canAdd = can('visits', 2);
+const newHref = (t) => '/visits/new?d=' + encodeURIComponent(bar.input) + '&t=' + t;
+const bookedMin = bar.bookings.reduce((sum, b) => sum + b.end - b.start, 0);
+const bookedText = bookedMin >= 60
+  ? faDigits(Math.floor(bookedMin / 60)) + ' ساعت' + (bookedMin % 60 ? ' و ' + faDigits(bookedMin % 60) + ' دقیقه' : '')
+  : faDigits(bookedMin) + ' دقیقه';
+const now = new Date();
+const nowMin = now.getHours() * 60 + now.getMinutes();
+%>
+<section class="card vbar" aria-labelledby="vbar-title">
+  <div class="vbar-head">
+    <div class="vbar-title">
+      <h2 id="vbar-title">نوار ساعت روز</h2>
+      <p><%= formatJalali(bar.date) %><% if (bar.isToday) { %> <span class="chip chip-ok chip-plain">امروز</span><% } %></p>
+    </div>
+    <p class="vbar-sum"><%= bar.bookings.length ? faDigits(bar.bookings.length) + ' ویزیت، ' + bookedText + ' رزرو' : 'همه‌ی روز آزاد است' %></p>
+    <nav class="vbar-days" aria-label="روزها">
+      <a class="vbar-nav" href="/visits?d=<%= encodeURIComponent(bar.prev) %>" aria-label="روز قبل" title="روز قبل">&rsaquo;</a>
+      <% if (!bar.isToday) { %><a class="btn btn-sm btn-ghost" href="/visits">امروز</a><% } %>
+      <a class="vbar-nav" href="/visits?d=<%= encodeURIComponent(bar.next) %>" aria-label="روز بعد" title="روز بعد">&lsaquo;</a>
+    </nav>
+  </div>
+  <div class="vbar-scroll" tabindex="0" role="region" aria-label="ساعت‌های روز از ۰۰:۰۰ تا ۲۴:۰۰">
+    <div class="vbar-track" data-day-bar-page="<%= bar.input %>"<%- canAdd ? ' data-new' : '' %><%- bar.isToday ? ' data-today' : '' %>>
+      <ol class="vbar-hours">
+        <% for (let h = 0; h < 24; h++) { %>
+        <li><% if (canAdd) { %><a href="<%= newHref(hh(h) + ':00') %>" aria-label="ویزیت جدید ساعت <%= faDigits(hh(h)) %>:۰۰" tabindex="-1"><span><%= faDigits(hh(h)) %></span></a><% } else { %><span><%= faDigits(hh(h)) %></span><% } %></li>
+        <% } %>
+      </ol>
+      <svg class="vbar-blocks" viewBox="0 0 1440 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+        <% bar.bookings.forEach((b) => { %>
+        <a href="/visits/<%= b.id %>" tabindex="-1"><rect class="vbar-block<%= b.status === 'done' ? ' is-done' : '' %>" x="<%= b.start %>" y="14" width="<%= b.end - b.start %>" height="72" rx="5" data-name="<%= b.name %>" data-time="<%= b.time %>" data-until="<%= b.until %>"<%- b.fromYesterday ? ' data-yesterday' : '' %>><title><%= b.name %>، ساعت <%= faDigits(b.time) %> تا <%= faDigits(b.until) %></title></rect></a>
+        <% }) %>
+        <% if (bar.isToday) { %><line class="vbar-now" x1="<%= nowMin %>" x2="<%= nowMin %>" y1="0" y2="100"/><% } %>
+      </svg>
+    </div>
+  </div>
+  <div class="vbar-legend" aria-hidden="true">
+    <span><i class="key-booked"></i>رزروشده</span><span><i class="key-done"></i>انجام‌شده</span><span><i class="key-free"></i>آزاد</span>
+    <% if (canAdd) { %><span class="vbar-tipline">برای ویزیت جدید روی ساعتی آزاد بزنید.</span><% } %>
+  </div>
+</section>

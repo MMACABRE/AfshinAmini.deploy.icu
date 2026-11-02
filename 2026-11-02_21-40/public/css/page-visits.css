@@ -1,0 +1,336 @@
+/* Visits page (D23) */
+.visit-toolbar { justify-content: space-between; align-items: flex-start; }
+.visit-ranges { display: flex; flex-wrap: wrap; gap: var(--sp-2); }
+.visit-filters { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-3); }
+.field-inline { display: flex; align-items: center; gap: var(--sp-2); }
+.field-inline label { font-size: var(--fs-sm); color: var(--text-2); white-space: nowrap; }
+.field-inline .input { width: 150px; }
+.visit-day h2 { font: 600 var(--fs-md)/1.4 var(--font-head); padding: 18px var(--pad) 6px; display: flex; align-items: center; gap: var(--sp-2); }
+.visit-day + .visit-day { border-top: 1px solid var(--border); }
+.pick-list .visit { grid-template-columns: minmax(0, 1fr) auto; }
+@media (max-width: 600px) {
+  .visit-filters, .field-inline { width: 100%; }
+  .field-inline .input { flex: 1; width: auto; }
+  .visit-filters .select { flex: 1; }
+}
+
+/* Day header: big day number, weekday and month beside it */
+.day-head { display: flex; align-items: center; gap: var(--sp-3); padding: 20px var(--pad) 8px; font: inherit; }
+.day-num { display: grid; place-items: center; min-width: 48px; height: 48px; padding: 0 6px; border-radius: 14px; background: var(--surface-2); border: 1px solid var(--border); font: 700 var(--fs-xl)/1 var(--font-head); }
+.is-today .day-num { background: var(--accent); border-color: transparent; color: var(--text-on-accent); }
+.day-meta { display: flex; flex-direction: column; line-height: 1.35; }
+.day-meta small { font-size: var(--fs-xs); color: var(--text-3); }
+.day-meta b { font: 600 var(--fs-md)/1.35 var(--font-head); }
+.day-count { margin-inline-start: auto; font-size: var(--fs-sm); color: var(--text-3); }
+.pick-list .visit::before { display: none; }
+.pick-list .visit { padding-inline-start: var(--pad); }
+
+/* Today's date badge: green warming into deep terracotta. */
+.is-today .day-num { background: linear-gradient(150deg, var(--accent) 35%, color-mix(in srgb, var(--accent) 45%, var(--terra)) 100%); }
+
+/* Day bar on /visits (D50): one day as a ruler, 00:00 on the left to 24:00 on the right (times read left to right
+   even in this right-to-left page). Booked visits are sage blocks; the night hours sit in a faint shade so the working
+   day stands out; "now" is the one terracotta line. The track is drawn by the server (hour links + SVG blocks), so it
+   reads without JavaScript; app.js adds the hover card, the time guide and the scroll position. */
+.vbar { margin-block-end: var(--sp-5); overflow: hidden; }
+.vbar-head { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); padding: var(--sp-4) var(--pad) var(--sp-3); }
+.vbar-title { min-width: 0; }
+.vbar-title h2 { font: 600 var(--fs-lg)/1.3 var(--font-head); letter-spacing: var(--track-head); }
+.vbar-title p { display: flex; align-items: center; gap: var(--sp-2); margin-block-start: 2px; font-size: var(--fs-sm); color: var(--text-2); }
+.vbar-sum { margin-inline-start: auto; font-size: var(--fs-sm); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.vbar-days { display: flex; align-items: center; gap: var(--sp-1); }
+.vbar-nav {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: var(--radius-sm);
+  color: var(--text-2); font: 500 var(--fs-xl)/1 var(--font-body); text-decoration: none;
+  transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
+}
+.vbar-nav:hover { background: var(--hover); color: var(--text); }
+.vbar-nav:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+
+.vbar-scroll { overflow-x: auto; direction: ltr; padding: 0 var(--pad) var(--sp-3); scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; }
+.vbar-scroll:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.vbar-track {
+  --label-h: 26px;
+  --night: color-mix(in srgb, var(--text) 3.5%, transparent);
+  --hour-line: color-mix(in srgb, var(--text) 11%, transparent);
+  --half-line: color-mix(in srgb, var(--text) 5%, transparent);
+  position: relative; min-width: 1056px; height: 112px; /* 44 px per hour: every hour link is a full tap target */
+  /* hour lines, faint half-hour lines, then the night shade (00-07 and 21-24), all under the label row */
+  background:
+    linear-gradient(to right, var(--hour-line) 0 1px, transparent 1px) 0 var(--label-h) / calc(100% / 24) calc(100% - var(--label-h)) repeat-x,
+    linear-gradient(to right, transparent 50%, var(--half-line) 50% calc(50% + 1px), transparent calc(50% + 1px)) 0 var(--label-h) / calc(100% / 24) calc(100% - var(--label-h)) repeat-x,
+    linear-gradient(to right, var(--night) 0 29.1667%, transparent 29.1667% 87.5%, var(--night) 87.5%) 0 var(--label-h) / 100% calc(100% - var(--label-h)) no-repeat,
+    var(--surface-2);
+  border-radius: var(--radius-sm);
+  box-shadow: inset 0 0 0 1px var(--border);
+}
+/* the label row stays on the card colour; the shaded lane starts under it */
+.vbar-track::before { content: ""; position: absolute; inset-inline: 0; inset-block-start: 0; height: var(--label-h); background: var(--surface); pointer-events: none; }
+
+.vbar-hours { position: absolute; inset: 0; display: flex; margin: 0; padding: 0; list-style: none; }
+.vbar-hours li { flex: 1 1 0; min-width: 0; }
+.vbar-hours a, .vbar-hours li > span { position: relative; display: block; height: 100%; color: inherit; text-decoration: none; }
+.vbar-hours span span, .vbar-hours a span {
+  display: block; padding-block-start: 5px; padding-inline-start: 5px;
+  font: 500 var(--fs-xs)/1 var(--font-mono); color: var(--text-3); letter-spacing: .02em;
+}
+.vbar-hours a { transition: background-color var(--t-fast) var(--ease); }
+.vbar-hours a:hover { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+.vbar-hours a:hover span { color: var(--accent-text); }
+.vbar-hours a:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; z-index: 1; }
+
+.vbar-blocks {
+  position: absolute; inset-inline: 0; inset-block: var(--label-h) 0; width: 100%; height: calc(100% - var(--label-h));
+  overflow: visible; pointer-events: none;
+}
+.vbar-blocks a, .vbar-block { pointer-events: auto; }
+.vbar-block {
+  fill: var(--accent-tint); stroke: var(--accent); stroke-width: 1.5; vector-effect: non-scaling-stroke; cursor: pointer;
+  transition: fill var(--t-fast) var(--ease);
+}
+.vbar-block:hover, .vbar-blocks a:focus-visible .vbar-block { fill: var(--accent-line); }
+.vbar-block.is-done { fill: var(--mute-bg); stroke: var(--accent-line); }
+.vbar-block.is-done:hover { fill: color-mix(in srgb, var(--accent-line) 55%, var(--mute-bg)); }
+.vbar-now { stroke: var(--terra); stroke-width: 2; vector-effect: non-scaling-stroke; }
+
+/* hover card for a booked block, and the time guide over free space (both added by app.js) */
+/* The card takes the place of the hour labels while it shows: one line, so it never leaves the scrolling track
+   (a scroller clips both axes, so anything above the track would be cut off). */
+.vbar-tip {
+  position: absolute; z-index: 3; inset-block-start: 1px; height: calc(var(--label-h) - 2px); pointer-events: none;
+  display: flex; align-items: center; gap: 8px; padding: 0 10px;
+  background: var(--raised); border: 1px solid var(--border-strong); border-radius: 7px; box-shadow: var(--shadow-sm);
+  direction: rtl; white-space: nowrap; font-size: var(--fs-xs); color: var(--text);
+}
+.vbar-tip[hidden], .vbar-guide[hidden] { display: none; }
+.vbar-tip b { font-weight: 600; font-size: var(--fs-sm); }
+.vbar-tip span { color: var(--text-2); font-variant-numeric: tabular-nums; }
+.vbar-guide { position: absolute; z-index: 2; inset-block: var(--label-h) 0; width: 2px; margin-inline-start: -1px; background: var(--terra); pointer-events: none; }
+.vbar-guide-label {
+  position: absolute; inset-block-end: 100%; inset-inline-start: 50%; transform: translate(-50%, -3px);
+  padding: 2px 6px; border-radius: 5px; background: var(--terra); color: var(--text-on-accent);
+  font: 500 var(--fs-xs)/1.2 var(--font-mono); white-space: nowrap;
+}
+
+.vbar-legend { display: flex; flex-wrap: wrap; align-items: center; gap: var(--sp-2) var(--sp-4); padding: 0 var(--pad) var(--sp-4); font-size: var(--fs-xs); color: var(--text-3); }
+.vbar-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.vbar-legend i { width: 12px; height: 12px; border-radius: 3px; border: 1.5px solid; }
+.vbar-legend .key-booked { background: var(--accent-tint); border-color: var(--accent); }
+.vbar-legend .key-done { background: var(--mute-bg); border-color: var(--accent-line); }
+.vbar-legend .key-free { background: var(--surface-2); border-color: var(--border-strong); }
+.vbar-legend .vbar-tipline { margin-inline-start: auto; }
+
+@media (max-width: 600px) {
+  .vbar-head { padding-inline: var(--sp-4); }
+  .vbar-sum { order: 3; flex-basis: 100%; margin-inline-start: 0; }
+  .vbar-days { margin-inline-start: auto; }
+  .vbar-scroll, .vbar-legend { padding-inline: var(--sp-4); }
+  .vbar-legend .vbar-tipline { margin-inline-start: 0; flex-basis: 100%; }
+}
+
+/* Day bar dropdown on the visit form (D50). Opens from the time box, below it (or above when there is no room),
+   wider than the box but well short of half the screen. Same ruler language as the /visits bar: hour lines, a night
+   shade, sage blocks; the pick is a sage line with a terracotta knob, the visit-to-be a dashed outline that turns to
+   the critical colours on a clash. Built by app.js; without it the field keeps the plain booked-times line. */
+.dbar { position: relative; }
+.dbar-pop {
+  /* a little wider than the field (24 px each side), centred on it; app.js nudges it back inside the viewport */
+  position: absolute; z-index: 30; inset-block-start: calc(100% + 8px); inset-inline-start: -24px;
+  width: clamp(320px, calc(100% + 48px), 640px); max-width: calc(100vw - 32px);
+  background: var(--raised); border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow), var(--edge);
+  direction: rtl; text-align: start;
+  opacity: 0; transform: translateY(-4px); transform-origin: top;
+  transition: opacity 160ms cubic-bezier(.23, 1, .32, 1), transform 160ms cubic-bezier(.23, 1, .32, 1);
+}
+.dbar-pop.is-above { inset-block-start: auto; inset-block-end: calc(100% + 8px); transform: translateY(4px); transform-origin: bottom; }
+.dbar-pop.is-open { opacity: 1; transform: none; }
+.dbar-pop[hidden] { display: none; }
+/* a green line with a terracotta tip along the top edge, like the page ribbon */
+.dbar-pop::before {
+  content: ""; position: absolute; inset-block-start: -1px; inset-inline: 18px; height: 2px; border-radius: 2px;
+  background: linear-gradient(to left, var(--accent) 70%, var(--terra));
+}
+.dbar-pop[aria-busy="true"] .dbar-lane { opacity: .55; transition: opacity 120ms ease; }
+
+.dbar-head { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--sp-3); padding: 14px 16px 10px; }
+.dbar-when { display: grid; gap: 2px; min-width: 0; }
+.dbar-date { font: 600 var(--fs-md)/1.35 var(--font-head); color: var(--text); }
+.dbar-date:empty { display: none; }
+.dbar-pick { font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.dbar-close {
+  flex: none; display: grid; place-items: center; width: 36px; height: 36px; margin: -4px -6px 0 0; margin-inline-end: -6px;
+  border: 0; border-radius: var(--radius-sm); background: transparent; color: var(--text-3); cursor: pointer;
+}
+.dbar-close:hover { background: var(--hover); color: var(--text); }
+.dbar-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 0; }
+.dbar-close .icon { width: 18px; height: 18px; }
+
+.dbar-scroll {
+  overflow-x: auto; direction: ltr; padding: 0 16px 12px; overscroll-behavior-x: contain;
+  scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent;
+}
+.dbar-track {
+  --label-h: 22px;
+  --night: color-mix(in srgb, var(--text) 3.5%, transparent);
+  --hour-line: color-mix(in srgb, var(--text) 11%, transparent);
+  --half-line: color-mix(in srgb, var(--text) 5%, transparent);
+  position: relative; height: 104px; border-radius: var(--radius-sm); outline: none;
+  background:
+    linear-gradient(to right, var(--hour-line) 0 1px, transparent 1px) 0 var(--label-h) / calc(100% / 24) calc(100% - var(--label-h)) repeat-x,
+    linear-gradient(to right, transparent 50%, var(--half-line) 50% calc(50% + 1px), transparent calc(50% + 1px)) 0 var(--label-h) / calc(100% / 24) calc(100% - var(--label-h)) repeat-x,
+    linear-gradient(to right, var(--night) 0 29.1667%, transparent 29.1667% 87.5%, var(--night) 87.5%) 0 var(--label-h) / 100% calc(100% - var(--label-h)) no-repeat,
+    linear-gradient(var(--surface-2), var(--surface-2)) 0 var(--label-h) / 100% calc(100% - var(--label-h)) no-repeat;
+}
+.dbar-track:focus-visible { box-shadow: 0 0 0 2px var(--raised), 0 0 0 4px var(--accent); }
+.dbar-hour {
+  position: absolute; inset-block-start: 4px; padding-inline-start: 4px;
+  font: 500 var(--fs-xs)/1 var(--font-mono); color: var(--text-3); letter-spacing: .02em; pointer-events: none;
+}
+.dbar-lane { position: absolute; inset-inline: 0; inset-block: var(--label-h) 0; cursor: pointer; }
+
+.dbar-block {
+  position: absolute; inset-block: 10px; border-radius: 6px; cursor: default;
+  background: var(--accent-tint); box-shadow: inset 0 0 0 1.5px var(--accent);
+  transition: background-color var(--t-fast) var(--ease);
+}
+.dbar-block:hover { background: var(--accent-line); }
+.dbar-block.is-done { background: var(--mute-bg); box-shadow: inset 0 0 0 1.5px var(--accent-line); }
+.dbar-now { position: absolute; inset-block: 0; width: 2px; margin-inline-start: -1px; background: var(--terra); pointer-events: none; }
+.dbar-now::before { content: ""; position: absolute; inset-block-start: -3px; inset-inline-start: -2px; width: 6px; height: 6px; border-radius: 50%; background: var(--terra); }
+
+.dbar-ghost {
+  position: absolute; inset-block: 6px; border-radius: 7px; pointer-events: none;
+  background: color-mix(in srgb, var(--accent) 13%, transparent); border: 1.5px dashed var(--accent);
+}
+.dbar-ghost.is-clash { background: color-mix(in srgb, var(--crit-dot) 16%, transparent); border-color: var(--crit-dot); }
+.dbar-marker { position: absolute; inset-block: 0; width: 2px; margin-inline-start: -1px; background: var(--accent); pointer-events: none; }
+.dbar-ghost[hidden], .dbar-marker[hidden], .dbar-hover[hidden], .dbar-tip[hidden] { display: none; }
+.dbar-knob {
+  /* at the foot of the pick line, so it never covers an hour label */
+  position: absolute; inset-block-end: -8px; inset-inline-start: 50%; width: 16px; height: 16px; translate: -50% 0;
+  border-radius: 50%; background: var(--terra); box-shadow: 0 0 0 2px var(--raised), 0 1px 3px rgba(0, 0, 0, .25);
+  pointer-events: auto; cursor: grab; touch-action: none;
+}
+.dbar-knob::after { content: ""; position: absolute; inset: -14px; } /* a 44 px target around the 16 px knob */
+.dbar-knob:active { cursor: grabbing; }
+.dbar-ghost.is-gliding, .dbar-marker.is-gliding { transition: left 120ms cubic-bezier(.23, 1, .32, 1), width 120ms cubic-bezier(.23, 1, .32, 1); }
+
+.dbar-hover { position: absolute; inset-block: 0; width: 1px; background: color-mix(in srgb, var(--terra) 65%, transparent); pointer-events: none; }
+.dbar-hover span {
+  position: absolute; inset-block-end: 100%; inset-inline-start: 0; translate: -50% -2px;
+  padding: 1px 6px; border-radius: 5px; background: var(--terra); color: var(--text-on-accent);
+  font: 500 var(--fs-xs)/1.3 var(--font-mono); white-space: nowrap;
+}
+
+/* hover card for a booked block: a one-line dark chip over the hour labels, just above the block. It is a child of
+   the pop, not of the scroller, so it is never clipped, and it stays clear of the header's pick line. */
+.dbar-tip {
+  position: absolute; z-index: 4; translate: 0 calc(-100% - 4px); pointer-events: none;
+  display: flex; align-items: baseline; gap: 8px; padding: 4px 10px; border-radius: 7px;
+  background: var(--ink); color: var(--on-ink); box-shadow: var(--shadow-sm);
+  font-size: var(--fs-xs); line-height: 1.3; white-space: nowrap;
+}
+.dbar-tip b { font-size: var(--fs-sm); font-weight: 600; }
+.dbar-tip span { opacity: .8; font-variant-numeric: tabular-nums; }
+
+.dbar-foot {
+  display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--sp-2) var(--sp-4);
+  padding: 10px 16px 14px; border-block-start: 1px solid var(--border-subtle);
+}
+.dbar-status { margin: 0; font-size: var(--fs-sm); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.dbar-status.is-clash { color: var(--crit-fg); font-weight: 500; }
+.dbar-keys { display: flex; flex-wrap: wrap; gap: var(--sp-3); font-size: var(--fs-xs); color: var(--text-2); }
+.dbar-keys span { display: inline-flex; align-items: center; gap: 5px; }
+.dbar-keys i { width: 11px; height: 11px; border-radius: 3px; border: 1.5px solid; }
+.dbar-keys .key-booked { background: var(--accent-tint); border-color: var(--accent); }
+.dbar-keys .key-done { background: var(--mute-bg); border-color: var(--accent-line); }
+.dbar-keys .key-pick { background: color-mix(in srgb, var(--accent) 13%, transparent); border: 1.5px dashed var(--accent); }
+
+@media (max-width: 600px) {
+  .dbar-head { padding: 12px 14px 8px; }
+  .dbar-close { width: 44px; height: 44px; margin-block-start: -8px; }
+  .dbar-scroll { padding-inline: 12px; }
+  .dbar-foot { padding-inline: 14px; }
+  .dbar-keys { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dbar-pop, .dbar-pop.is-above { transition: none; transform: none; }
+  .dbar-ghost.is-gliding, .dbar-marker.is-gliding { transition: none; }
+}
+
+/* Length dial on the visit form (D51). A clock face: 5 to 60 sit where the minutes sit, a sage arc runs clockwise from
+   twelve to the chosen length and ends in a terracotta knob. Past an hour (75, 90) the inner arc is full and a thin
+   terracotta outer ring shows the extra minutes, so "more than an hour" reads at a glance. Built by app.js; without it
+   the plain select stays. */
+.dial { position: relative; }
+.dial > select[hidden] { display: none; }
+.dial-btn { width: 100%; text-align: start; cursor: pointer; font-variant-numeric: tabular-nums; }
+.dial-btn[aria-expanded="true"] { border-color: var(--accent); box-shadow: 0 0 0 3px var(--focus); }
+
+.dial-pop {
+  position: absolute; z-index: 30; inset-block-start: calc(100% + 8px); inset-inline-start: 0;
+  width: 280px; max-width: calc(100vw - 32px); padding: 18px 18px 16px;
+  background: var(--raised); border: 1px solid var(--border-strong); border-radius: var(--radius-lg);
+  box-shadow: var(--shadow), var(--edge); direction: rtl;
+  opacity: 0; transform: translateY(-4px) scale(.98); transform-origin: top center;
+  transition: opacity 160ms cubic-bezier(.23, 1, .32, 1), transform 160ms cubic-bezier(.23, 1, .32, 1);
+}
+.dial-pop.is-above { inset-block-start: auto; inset-block-end: calc(100% + 8px); transform: translateY(4px) scale(.98); transform-origin: bottom center; }
+.dial-pop.is-open { opacity: 1; transform: none; }
+.dial-pop[hidden] { display: none; }
+.dial-pop::before {
+  content: ""; position: absolute; inset-block-start: -1px; inset-inline: 18px; height: 2px; border-radius: 2px;
+  background: linear-gradient(to left, var(--accent) 70%, var(--terra));
+}
+
+.dial-face { position: relative; width: 232px; height: 232px; margin-inline: auto; touch-action: none; cursor: pointer; user-select: none; }
+.dial-ring { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.dial-plate { fill: var(--surface-2); }
+.dial-track { fill: none; stroke: var(--border); stroke-width: 6; }
+.dial-arc { fill: none; stroke: var(--accent); stroke-width: 6; stroke-linecap: round; transition: stroke-dasharray 160ms cubic-bezier(.23, 1, .32, 1); }
+.dial-extra { fill: none; stroke: var(--terra); stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 160ms cubic-bezier(.23, 1, .32, 1); }
+.dial-knob { fill: var(--terra); stroke: var(--raised); stroke-width: 3; transition: cx 160ms cubic-bezier(.23, 1, .32, 1), cy 160ms cubic-bezier(.23, 1, .32, 1); }
+.dial-face.is-dragging .dial-arc, .dial-face.is-dragging .dial-extra, .dial-face.is-dragging .dial-knob { transition: none; }
+.dial-tick { stroke: var(--border-strong); stroke-width: 1.5; }
+
+.dial-num {
+  position: absolute; width: 36px; height: 36px; translate: -50% -50%;
+  display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%;
+  background: transparent; color: var(--text-2); cursor: pointer;
+  font: 500 var(--fs-sm)/1 var(--font-body); font-variant-numeric: tabular-nums;
+  transition: background-color var(--t-fast) var(--ease), color var(--t-fast) var(--ease), transform 120ms ease-out;
+}
+.dial-num::after { content: ""; position: absolute; inset: -4px; border-radius: 50%; } /* 44 px target */
+.dial-num:hover { background: var(--hover); color: var(--text); }
+.dial-num:active { transform: scale(.94); }
+.dial-num.is-on { background: var(--accent); color: var(--text-on-accent); font-weight: 600; }
+.dial-num:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.dial-center { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 2px; pointer-events: none; }
+.dial-value { font: 700 var(--fs-3xl)/1 var(--font-head); letter-spacing: var(--track-display); color: var(--text); font-variant-numeric: tabular-nums; }
+.dial-unit { font-size: var(--fs-sm); color: var(--text-3); }
+
+.dial-more { display: flex; align-items: center; justify-content: space-between; gap: var(--sp-3); margin-block-start: 14px; padding-block-start: 12px; border-block-start: 1px solid var(--border-subtle); }
+.dial-more > span { font-size: var(--fs-sm); color: var(--text-2); }
+.dial-pills { display: flex; gap: var(--sp-2); }
+.dial-pill {
+  min-width: 52px; height: 36px; padding: 0 12px; border: 1px solid var(--border-strong); border-radius: var(--radius-full);
+  background: var(--surface); color: var(--text); cursor: pointer;
+  font: 500 var(--fs-sm)/1 var(--font-body); font-variant-numeric: tabular-nums;
+  transition: background-color var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease), transform 120ms ease-out;
+}
+.dial-pill:hover { border-color: var(--terra-line); background: var(--terra-pale); }
+.dial-pill:active { transform: scale(.96); }
+.dial-pill.is-on { background: var(--terra); border-color: var(--terra); color: var(--text-on-accent); }
+.dial-pill:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+@media (max-width: 600px) {
+  .dial-pop { width: calc(100vw - 32px); }
+  .dial-face { width: 248px; height: 248px; }
+  .dial-pill { height: 44px; min-width: 60px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .dial-pop, .dial-pop.is-above { transition: none; transform: none; }
+  .dial-arc, .dial-extra, .dial-knob, .dial-num, .dial-pill { transition: none; }
+}
